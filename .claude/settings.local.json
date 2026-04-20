@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm uninstall *)",
+      "Bash(npm install *)",
+      "Bash(npx tsx *)",
+      "Bash(npx prisma *)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -X POST http://localhost:3001/debug/create-user)",
+      "Bash(curl -s http://localhost:3001/debug/users)",
+      "Bash(pkill -f \"ts-node-dev\")"
+    ]
+  }
+}

@@ -1,14 +1,12 @@
-import express from 'express';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import "dotenv/config";
+import express from "express";
 
 const app = express();
 app.use(express.json());
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`))
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
