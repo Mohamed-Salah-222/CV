@@ -1,0 +1,11 @@
+{
+  "name": "cv",
+  "version": "1.0.0",
+  "description": "CV application with shared types across backend and frontend",
+  "private": true,
+  "workspaces": [
+    "types",
+    "Back-End",
+    "Front-End"
+  ]
+}
