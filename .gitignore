@@ -42,3 +42,6 @@ coverage/
 
 # Prisma generated client
 Back-End/src/generated/
+
+# Claude Code local files
+.claude/
