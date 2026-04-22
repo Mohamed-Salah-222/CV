@@ -18,6 +18,10 @@
     /* Path aliases */
     "paths": {
       "@/*": ["./src/*"]
+    /* Path mapping for workspace packages */
+    "baseUrl": ".",
+    "paths": {
+      "@cv/types": ["../../types"]
     },
 
     /* Linting */
