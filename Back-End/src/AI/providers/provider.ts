@@ -4,7 +4,7 @@ export interface IAIProvider {
   suggest(tokens: string): Promise<AISuggestion>;
 
 }
-
+// TODO: devide this sys prompt into sub prompts that can be changed easily
 export class AIProvider {
   protected systemPrompt: string;
 

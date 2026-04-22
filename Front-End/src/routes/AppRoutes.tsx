@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import HomePage from "@/pages/HomePage";
+import ShowResponse from "@/pages/ShowResponse";
 import HealthPage from "@/pages/HealthPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -12,6 +13,7 @@ export default function AppRoutes() {
       </nav>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/ai" element={<ShowResponse />} />
         <Route path="/health" element={<HealthPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

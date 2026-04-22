@@ -14,4 +14,5 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL!,
   DIRECT_URL: process.env.DIRECT_URL!,
   CLIENT_URL: process.env.CLIENT_URL ?? "http://localhost:5173",
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 } as const;
