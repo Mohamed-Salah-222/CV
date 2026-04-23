@@ -10,6 +10,7 @@ export default function AppRoutes() {
       <nav className="flex gap-4 border-b bg-white p-4">
         <Link to="/" className="font-medium">Home</Link>
         <Link to="/health" className="font-medium">Health</Link>
+        <Link to="/ai" className="font-medium">AI</Link>
       </nav>
       <Routes>
         <Route path="/" element={<HomePage />} />
