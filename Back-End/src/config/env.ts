@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-const requiredVars = ["DATABASE_URL", "DIRECT_URL"] as const;
+const requiredVars = ["DATABASE_URL", "DIRECT_URL", "CLERK_SECRET_KEY"] as const;
 
 const missing = requiredVars.filter((key) => !process.env[key]);
 if (missing.length > 0) {
@@ -15,4 +15,6 @@ export const env = {
   DIRECT_URL: process.env.DIRECT_URL!,
   CLIENT_URL: process.env.CLIENT_URL ?? "http://localhost:5173",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY!,
+  CLERK_WEBHOOK_SIGNING_SECRET: process.env.CLERK_WEBHOOK_SIGNING_SECRET,
 } as const;

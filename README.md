@@ -42,6 +42,42 @@ Copy `.env.example` to `.env` in each folder and fill in values. Never commit `.
 - Branch from `main`: `feat/<short-description>` or `fix/<short-description>`
 - Open a PR, request review, squash-merge after approval.
 
+## Authentication
+
+Authentication is handled by [Clerk](https://clerk.com).
+
+### Required environment variables
+
+| Variable | Location | Description |
+|---|---|---|
+| `VITE_CLERK_PUBLISHABLE_KEY` | `Front-End/.env` | Clerk publishable key (safe to expose) |
+| `CLERK_SECRET_KEY` | `Back-End/.env` | Clerk secret key (keep private) |
+| `CLERK_WEBHOOK_SIGNING_SECRET` | `Back-End/.env` | Webhook signing secret from Clerk dashboard |
+
+### Getting keys
+
+1. Create (or open) your application at [clerk.com/dashboard](https://dashboard.clerk.com)
+2. Go to **API Keys** — copy the publishable key and secret key
+
+### Local webhook setup
+
+Clerk webhooks require a publicly reachable URL. Use [ngrok](https://ngrok.com) (or any tunnel):
+
+```bash
+ngrok http 3001
+```
+
+In the Clerk dashboard → **Webhooks** → **Add Endpoint**:
+- URL: `https://<your-ngrok-subdomain>.ngrok.io/api/webhooks/clerk`
+- Subscribe to: `user.created`, `user.updated`, `user.deleted`
+- Copy the **Signing Secret** → paste into `Back-End/.env` as `CLERK_WEBHOOK_SIGNING_SECRET`
+
+### How it works
+
+- **Frontend** — `ClerkProvider` wraps the entire app. Protected routes use `<ProtectedRoute>` which redirects unauthenticated users to `/sign-in`. Auth state is gated with `<Show when="signed-in">` / `<Show when="signed-out">`.
+- **Backend** — `clerkMiddleware()` runs globally and populates `req.auth` on every request. Individual routes opt into auth enforcement via the `requireAuth` middleware, which returns `401` if no valid Clerk session is present.
+- **User sync** — Clerk is the source of truth for identity. When a user signs up, updates their profile, or deletes their account, Clerk fires a webhook to `/api/webhooks/clerk`. The webhook handler upserts or deletes the corresponding row in Postgres via Prisma.
+
 ## License
 
 No license currently. All rights reserved. A license will be added before any public release.
