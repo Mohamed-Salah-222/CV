@@ -1,5 +1,4 @@
 import { AIProvider, IAIProvider } from "./provider";
-import { AISuggestion } from "@cv/types";
 
 
 // TODO: add away to write response to db when you get a response

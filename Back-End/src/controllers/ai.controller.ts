@@ -58,7 +58,6 @@ Graduated: 2025
 
 export async function getAISuggestion(_req: Request, res: Response) {
   try {
-    console.log("apiKey: ", env.GEMINI_API_KEY)
     const ai = new GeminiAIProvider(env.GEMINI_API_KEY!);
     const data = await ai.suggest(DUMMY_DATA);
     // console.log("Ai: ", ai);
