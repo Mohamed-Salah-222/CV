@@ -9,7 +9,9 @@ import SignUpPage from "@/pages/SignUpPage";
 import ProfilePage from "@/pages/ProfilePage";
 import DashboardPage from "@/pages/DashboardPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
-
+import TempalteViewPage from "@/pages/TemplateViewPage";
+import TemplateDetailPage from "@/pages/TemplateDetailPage";
+import CVBuilderPage from "@/pages/CVBuilderPage";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -17,6 +19,7 @@ export default function AppRoutes() {
         <Link to="/" className="font-medium">Home</Link>
         <Link to="/health" className="font-medium">Health</Link>
         <Link to="/ai" className="font-medium">AI</Link>
+        <Link to="/templates" className="font-medium">TemplateView</Link>
 
         <Show when="signed-in">
           <Link to="/dashboard" className="font-medium">Dashboard</Link>
@@ -46,6 +49,9 @@ export default function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/ai" element={<ShowResponse />} />
         <Route path="/health" element={<HealthPage />} />
+        <Route path="/templates" element={<TempalteViewPage />} />
+        <Route path="/template/:name" element={<TemplateDetailPage />} />
+        <Route path="/cv-builder" element={<CVBuilderPage />} />
         <Route path="/sign-in/*" element={<SignInPage />} />
         <Route path="/sign-up/*" element={<SignUpPage />} />
         <Route
