@@ -18,15 +18,14 @@ export function createApp() {
     }),
   );
 
-  // CRITICAL: webhook route mounted BEFORE any body parser or Clerk middleware.
-  // verifyWebhook() needs the untouched raw body to recompute the signature.
+
   app.use("/api/webhooks/clerk", express.raw({ type: "application/json" }), webhookRoutes);
 
-  // JSON parsing for everything else
+
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-  // Clerk auth middleware — populates req.auth on all remaining routes
+  // Clerk auth middleware 
   app.use(clerkMiddleware());
 
   app.use(requestLogger);
