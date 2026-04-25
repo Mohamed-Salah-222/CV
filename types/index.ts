@@ -1,3 +1,4 @@
+import * as templateTypes from "./template.types";
 type SkillLevel = "beginner" | "intermediate" | "advanced";
 
 type SeniorityLevel = "junior" | "mid" | "senior";
@@ -67,4 +68,13 @@ interface AISuggestion {
   score: number;
 }
 
-export type { AISuggestion, SkillLevel, SeniorityLevel, SuggestionStrength, Skill, SkillCluster, Role, SkillGraph, FieldType, SuggestionTags, Suggestion, FieldSuggestions, AIResult }
+export type {
+  AISuggestion, SkillLevel, SeniorityLevel,
+  SuggestionStrength, Skill,
+  SkillCluster, Role,
+  SkillGraph, FieldType,
+  SuggestionTags, Suggestion,
+  FieldSuggestions, AIResult,
+  templateTypes
+}
+

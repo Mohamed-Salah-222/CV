@@ -1,28 +1,17 @@
-export interface TemplateField {
-  type: "text" | "textarea" | "repeatable" | "tags" | "section";
-  label?: string;
-  itemFields?: Record<string, { type: "text" | "textarea"; label: string }>;
-  fields?: Record<string, { type: "text" | "textarea"; label: string }>;
-}
+import { templateTypes } from "@cv/types";
 
-export interface Template {
-  id: string;
-  name: string;
-  thumbnail: string;
-  fields: Record<string, TemplateField>;
-}
-
-export const templateFields: Record<string, TemplateField> = {
+const templateFields: Record<string, templateTypes.TemplateField> = {
   header: {
     type: "section",
     fields: {
       links: {
         type: "repeatable",
-        itemFields: {
-          label: { type: "text", label: "Label" },
-          url: { type: "text", label: "URL" },
-        },
+        label: "Links",
       },
+    },
+    itemFields: {
+      label: { type: "text", label: "Label" },
+      url: { type: "text", label: "URL" },
     },
   },
   personal: {
@@ -68,8 +57,8 @@ export const templateFields: Record<string, TemplateField> = {
     },
   },
 };
-
-export const templates: Template[] = [
+export default templateFields;
+export const templates: templateTypes.Template[] = [
   {
     id: "modern",
     name: "Modern",

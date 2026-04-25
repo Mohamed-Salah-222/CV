@@ -1,34 +1,6 @@
-export interface CVData {
-  header: {
-    links: { label: string; url: string }[];
-  };
-  personal: {
-    fullName: string;
-    email: string;
-    phone: string;
-    location: string;
-    summary: string;
-  };
-  experience: {
-    company: string;
-    role: string;
-    duration: string;
-    description: string;
-  }[];
-  education: {
-    school: string;
-    degree: string;
-    duration: string;
-  }[];
-  skills: string[];
-  projects: {
-    name: string;
-    description: string;
-    link: string;
-  }[];
-}
+import { templateTypes } from "@cv/types";
 
-export const dummyCVData: CVData = {
+export const dummyCVData: templateTypes.CVData = {
   header: {
     links: [
       { label: "LinkedIn", url: "https://linkedin.com/in/johndoe" },
