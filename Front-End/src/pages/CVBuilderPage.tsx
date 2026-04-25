@@ -1,16 +1,3 @@
-"use client";
-
-/**
- * CVBuilderPage
- *
- * Dependencies (install before use):
- *   npm install html2canvas jspdf
- *
- * Rich text fields store HTML strings (e.g. "<b>bold</b> text").
- * The CV preview renders them via dangerouslySetInnerHTML.
- * PDF export captures only the #cv-preview element — not the full page.
- */
-
 import {
   useState,
   useCallback,
@@ -19,10 +6,31 @@ import {
   type RefObject,
 } from "react";
 import type { templateTypes } from "@cv/types";
+import { env } from "@/config/env";
 
 type CVData = templateTypes.CVData;
 // ─── PDF export (CV element only) ────────────────────────────────────────────
 
+
+
+async function saveCV(cvData: CVData) {
+  try {
+    await fetch(`${env.API_URL}/api/users/me/cvs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        cv_id: "something",
+        template_id: "something",
+        data: cvData,
+      }),
+    });
+
+  } catch (e) {
+    console.error(e)
+  }
+}
 async function exportCVToPDF(cvRef: RefObject<HTMLDivElement | null>) {
   const el = cvRef.current;
   if (!el) return;
@@ -781,6 +789,9 @@ export default function CVBuilderPage() {
       {/* Live preview */}
       <main style={s.previewPane}>
         <CVPreview data={cvData} cvRef={cvRef} />
+        <button style={s.btn} onClick={() => saveCV(cvData)}>
+          Save CV
+        </button>
       </main>
     </div>
   );

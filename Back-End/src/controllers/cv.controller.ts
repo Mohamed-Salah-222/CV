@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../db/prisma";
+
 // HACK: need to actualy query by the user id 
 // I am only doing it like this so that I don't have to login, or pass auth bearer thing xD
 export async function updateUserCV(_req: Request, res: Response) {
@@ -53,7 +54,7 @@ export async function updateUserCV(_req: Request, res: Response) {
   }
 }
 
-export async function createUserCV(_req: Request, res: Response) {
+export async function saveUserCV(_req: Request, res: Response) {
   const data = _req.body.data ?? null;
   try {
     const cv = await prisma.cV.create({
