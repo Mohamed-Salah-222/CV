@@ -680,6 +680,8 @@ export default function CVBuilderPage() {
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, string[]> | null>(null);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [modalText, setModalText] = useState("");
+  const [modalGithub, setModalGithub] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -937,9 +939,11 @@ export default function CVBuilderPage() {
                   Enter your experience, skills, or paste your resume text:
                 </label>
                 <textarea
-                  id="ai-generate-text"
+                  value={modalText}
+                  onChange={(e) => setModalText(e.target.value)}
                   style={{ ...s.input, width: "100%", minHeight: 200, resize: "vertical", fontFamily: "inherit" }}
                   placeholder="Paste your resume, LinkedIn summary, or describe your experience..."
+                  disabled={isGenerating}
                 />
               </div>
 
@@ -948,9 +952,11 @@ export default function CVBuilderPage() {
                   Or enter GitHub URL / username:
                 </label>
                 <input
-                  id="ai-generate-github"
+                  value={modalGithub}
+                  onChange={(e) => setModalGithub(e.target.value)}
                   style={{ ...s.input, width: "100%" }}
                   placeholder="github.com/username or just username"
+                  disabled={isGenerating}
                 />
               </div>
 
@@ -971,22 +977,21 @@ export default function CVBuilderPage() {
                 <button
                   style={{ ...s.btn, ...s.btnPrimary }}
                   onClick={async () => {
-                    const textInput = document.getElementById("ai-generate-text") as HTMLTextAreaElement;
-                    const githubInput = document.getElementById("ai-generate-github") as HTMLInputElement;
-                    
-                    const rawText = textInput?.value?.trim() || githubInput?.value?.trim();
+                    const rawText = modalText.trim() || modalGithub.trim();
                     if (!rawText) {
                       setGenerateError("Please enter some text or a GitHub URL.");
                       return;
                     }
 
-                    if (githubInput?.value?.trim()) {
+                    if (modalGithub.trim()) {
                       setGenerateError(null);
                       setIsGenerating(true);
                       try {
-                        const githubData = await fetchGitHubData(githubInput.value.trim());
+                        const githubData = await fetchGitHubData(modalGithub.trim());
                         await handleGenerateFromAI(githubData);
                         setShowAIGenerateModal(false);
+                        setModalText("");
+                        setModalGithub("");
                       } catch (e: any) {
                         console.error("Failed to fetch GitHub:", e);
                         setGenerateError(e.message || "Failed to fetch GitHub data");
@@ -996,6 +1001,8 @@ export default function CVBuilderPage() {
                     } else {
                       await handleGenerateFromAI(rawText);
                       setShowAIGenerateModal(false);
+                      setModalText("");
+                      setModalGithub("");
                     }
                   }}
                   disabled={isGenerating}
