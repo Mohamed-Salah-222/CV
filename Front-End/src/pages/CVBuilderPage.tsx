@@ -6,54 +6,11 @@ import {
   type RefObject,
 } from "react";
 import type { templateTypes } from "@cv/types";
-import { env } from "@/config/env";
 import { useSettings } from "@/contexts/SettingsContext";
 import { fetchGitHubData } from "@/lib/github";
+import * as cvService from "@/services/cv.service";
 
 type CVData = templateTypes.CVData;
-
-interface AIGeneratedCV {
-  cvData: CVData;
-  suggestions: Record<string, string[]>;
-}
-
-async function generateCVFromAI(rawText: string): Promise<AIGeneratedCV | null> {
-  const res = await fetch(`${env.API_URL}/api/ai/generate-cv`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rawText }),
-  });
-  const json = await res.json();
-  if (json.status === "success" && json.data) {
-    return json.data;
-  }
-  return null;
-}
-
-async function createCV(cvData: CVData) {
-  const res = await fetch(`${env.API_URL}/api/users/me/cvs`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      template_id: "default",
-      title: cvData.personal.fullName || "Untitled CV",
-      data: cvData,
-    }),
-  });
-  const json = await res.json();
-  return json.data?.id ?? null;
-}
-
-async function updateCV(id: string, cvData: CVData) {
-  await fetch(`${env.API_URL}/api/users/me/cvs/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: cvData.personal.fullName || "Untitled CV",
-      data: cvData,
-    }),
-  });
-}
 
 async function exportCVToPDF(cvRef: RefObject<HTMLDivElement | null>) {
   const el = cvRef.current;
@@ -730,10 +687,9 @@ export default function CVBuilderPage() {
     if (id) {
       async function loadCV() {
         try {
-          const res = await fetch(`${env.API_URL}/api/users/me/cvs/${id}`);
-          const json = await res.json();
-          if (json.data?.data) {
-            setCVData(json.data.data as CVData);
+          const cvData = await cvService.fetchCV(id);
+          if (cvData) {
+            setCVData(cvData);
             setCurrentCVId(id);
             currentCVIdRef.current = id;
           }
@@ -753,7 +709,7 @@ export default function CVBuilderPage() {
     setGenerateError(null);
     setIsGenerating(true);
     try {
-      const result = await generateCVFromAI(rawText);
+      const result = await cvService.generateCVFromAI(rawText);
       if (!result) {
         setGenerateError("Failed to generate CV. Please try again.");
         return;
@@ -763,7 +719,7 @@ export default function CVBuilderPage() {
       setAiSuggestions(result.suggestions);
       hasInitializedRef.current = true;
 
-      const newId = await createCV(result.cvData);
+      const newId = await cvService.createCV(result.cvData);
       if (newId) {
         setCurrentCVId(newId);
         currentCVIdRef.current = newId;
@@ -782,9 +738,9 @@ export default function CVBuilderPage() {
     try {
       const id = currentCVIdRef.current;
       if (id) {
-        await updateCV(id, data);
+        await cvService.updateCV(id, data);
       } else {
-        const newId = await createCV(data);
+        const newId = await cvService.createCV(data);
         if (newId) {
           setCurrentCVId(newId);
           currentCVIdRef.current = newId;

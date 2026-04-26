@@ -25,7 +25,7 @@ enum LocationType {
 
 model CV {
   id          String   @id @default(uuid())
-  userId      String   @default("1")
+  userId      String
   templateId  String?
   data       Json?
   title      String?  @default("Untitled CV")

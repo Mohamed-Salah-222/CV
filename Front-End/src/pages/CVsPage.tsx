@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { env } from "@/config/env";
+import { fetchCVs, deleteCV } from "@/services/cv.service";
 
 interface CV {
   id: string;
@@ -16,25 +16,28 @@ export default function CVsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchCVs() {
+    async function loadCVs() {
       try {
-        const res = await fetch(`${env.API_URL}/api/users/me/cvs`, {
-          headers: { "Content-Type": "application/json" },
-        });
-        const json = await res.json();
-        if (json.status === "success") {
-          setCvs(json.data || []);
-        } else {
-          setError(json.error || "Failed to fetch CVs");
-        }
-      } catch (e) {
-        setError("Failed to fetch CVs");
+        const data = await fetchCVs();
+        setCvs(data || []);
+      } catch (e: any) {
+        setError(e.message || "Failed to fetch CVs");
       } finally {
         setLoading(false);
       }
     }
-    fetchCVs();
+    loadCVs();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this CV?")) return;
+    try {
+      await deleteCV(id);
+      setCvs(cvs.filter((cv) => cv.id !== id));
+    } catch (e: any) {
+      alert(e.message || "Failed to delete CV");
+    }
+  };
 
   if (loading) {
     return (
@@ -77,26 +80,47 @@ export default function CVsPage() {
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {cvs.map((cv) => (
-            <Link
+            <div
               key={cv.id}
-              to={`/cv-builder?id=${cv.id}`}
               style={{
-                display: "block",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
                 padding: 16,
                 background: "#fff",
                 border: "0.5px solid rgba(0,0,0,0.1)",
                 borderRadius: 10,
-                textDecoration: "none",
-                color: "inherit",
               }}
             >
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                {cv.title || "Untitled CV"}
-              </div>
-              <div style={{ fontSize: 12, color: "#888" }}>
-                Last updated: {new Date(cv.updatedAt).toLocaleString()}
-              </div>
-            </Link>
+              <Link
+                to={`/cv-builder?id=${cv.id}`}
+                style={{
+                  flex: 1,
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                  {cv.title || "Untitled CV"}
+                </div>
+                <div style={{ fontSize: 12, color: "#888" }}>
+                  Last updated: {new Date(cv.updatedAt).toLocaleString()}
+                </div>
+              </Link>
+              <button
+                onClick={() => handleDelete(cv.id)}
+                style={{
+                  padding: "6px 12px",
+                  background: "transparent",
+                  border: "0.5px solid rgba(0,0,0,0.1)",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  color: "#666",
+                }}
+              >
+                Delete
+              </button>
+            </div>
           ))}
         </div>
       )}
