@@ -17,7 +17,7 @@ const defaultSettings: Settings = {
 const SettingsContext = createContext<SettingsContextValue>({
   settings: defaultSettings,
   loading: true,
-}));
+});
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings | null>(null);
