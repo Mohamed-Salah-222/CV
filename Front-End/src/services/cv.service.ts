@@ -7,29 +7,39 @@ export interface AICVResponse {
   suggestions: Record<string, string[]>;
 }
 
-export async function fetchCVsRequest(token: string): Promise<AICVResponse> {
+export async function fetchCVsRequest(token: string): Promise<any> {
+  if (!token) return [];
+  
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`/api/users/me/cvs`, { headers });
+  if (!res.ok) return [];
+  
   const json = await res.json();
   if (json.status === "success") return json.data;
-  throw new Error(json.error || "Failed to fetch CVs");
+  return [];
 }
 
 export async function fetchCVRequest(id: string, token: string): Promise<CVData | null> {
+  if (!token) return null;
+  
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`/api/users/me/cvs/${id}`, { headers });
+  if (!res.ok) return null;
+  
   const json = await res.json();
   if (json.status === "success" && json.data?.data) return json.data.data as CVData;
   return null;
 }
 
 export async function createCVRequest(cvData: CVData, token: string, title?: string): Promise<string | null> {
+  if (!token) return null;
+  
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`/api/users/me/cvs`, {
     method: "POST",
@@ -45,8 +55,10 @@ export async function createCVRequest(cvData: CVData, token: string, title?: str
 }
 
 export async function updateCVRequest(id: string, cvData: CVData, token: string, title?: string): Promise<void> {
+  if (!token) return;
+  
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  headers.Authorization = `Bearer ${token}`;
 
   await fetch(`/api/users/me/cvs/${id}`, {
     method: "PATCH",
@@ -59,8 +71,10 @@ export async function updateCVRequest(id: string, cvData: CVData, token: string,
 }
 
 export async function deleteCVRequest(id: string, token: string): Promise<void> {
+  if (!token) return;
+  
   const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  headers.Authorization = `Bearer ${token}`;
 
   await fetch(`/api/users/me/cvs/${id}`, {
     method: "DELETE",
@@ -69,14 +83,18 @@ export async function deleteCVRequest(id: string, token: string): Promise<void> 
 }
 
 export async function generateCVRequest(token: string, rawText: string): Promise<AICVResponse | null> {
+  if (!token) return null;
+  
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`/api/ai/generate-cv`, {
     method: "POST",
     headers,
     body: JSON.stringify({ rawText }),
   });
+  if (!res.ok) return null;
+  
   const json = await res.json();
   if (json.status === "success" && json.data) {
     return json.data;

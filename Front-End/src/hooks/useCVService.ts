@@ -15,32 +15,38 @@ export function useCVService() {
 
   const fetchCVs = useCallback(async () => {
     const token = await getToken();
-    return cvApi.fetchCVsRequest(token ?? "");
+    if (!token) return [];
+    return cvApi.fetchCVsRequest(token);
   }, [getToken]);
 
   const fetchCV = useCallback(async (id: string) => {
     const token = await getToken();
-    return cvApi.fetchCVRequest(id, token ?? "");
+    if (!token) return null;
+    return cvApi.fetchCVRequest(id, token);
   }, [getToken]);
 
   const createCV = useCallback(async (cvData: CVData, title?: string) => {
     const token = await getToken();
-    return cvApi.createCVRequest(cvData, token ?? "", title);
+    if (!token) return null;
+    return cvApi.createCVRequest(cvData, token, title);
   }, [getToken]);
 
   const updateCV = useCallback(async (id: string, cvData: CVData, title?: string) => {
     const token = await getToken();
-    return cvApi.updateCVRequest(id, cvData, token ?? "", title);
+    if (!token) return;
+    return cvApi.updateCVRequest(id, cvData, token, title);
   }, [getToken]);
 
   const deleteCV = useCallback(async (id: string) => {
     const token = await getToken();
-    return cvApi.deleteCVRequest(id, token ?? "");
+    if (!token) return;
+    return cvApi.deleteCVRequest(id, token);
   }, [getToken]);
 
   const generateCV = useCallback(async (rawText: string): Promise<AICVResponse | null> => {
     const token = await getToken();
-    return cvApi.generateCVRequest(token ?? "", rawText);
+    if (!token) return null;
+    return cvApi.generateCVRequest(token, rawText);
   }, [getToken]);
 
   return {

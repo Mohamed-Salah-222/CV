@@ -34,6 +34,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (token) headers.Authorization = `Bearer ${token}`;
 
         const res = await fetch(`/api/users/me/settings`, { headers });
+        
+        // If not logged in (401/redirect to login), use defaults
+        if (!res.ok) {
+          setSettings(defaultSettings);
+          setLoading(false);
+          return;
+        }
+        
         const json = await res.json();
         if (json.status === "success" && json.data) {
           setSettings(json.data);
