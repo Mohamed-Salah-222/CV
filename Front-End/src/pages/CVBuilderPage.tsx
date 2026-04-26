@@ -10,57 +10,19 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { fetchGitHubData } from "@/lib/github";
 import { useCVService } from "@/hooks/useCVService";
 
+import { useCVData } from "@/hooks/useCVData";
+import { useCVExport } from "@/hooks/useCVExport";
+
 type CVData = templateTypes.CVData;
 
-async function exportCVToPDF(cvRef: RefObject<HTMLDivElement | null>) {
-  const el = cvRef.current;
-  if (!el) return;
-
-  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-    import("html2canvas"),
-    import("jspdf"),
-  ]);
-
-  // Strip visual chrome so edges are clean in the PDF
-  const prev = {
-    borderRadius: el.style.borderRadius,
-    boxShadow: el.style.boxShadow,
-    border: el.style.border,
-  };
-  el.style.borderRadius = "0";
-  el.style.boxShadow = "none";
-  el.style.border = "none";
-
-  const canvas = await html2canvas(el, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-  });
-
-  el.style.borderRadius = prev.borderRadius;
-  el.style.boxShadow = prev.boxShadow;
-  el.style.border = prev.border;
-
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const imgH = pageW * (canvas.height / canvas.width);
-
-  // Tile content across pages if taller than one A4
-  let yOffset = 0;
-  let remaining = imgH;
-  while (remaining > 0) {
-    pdf.addImage(imgData, "PNG", 0, -yOffset, pageW, imgH);
-    remaining -= pageH;
-    yOffset += pageH;
-    if (remaining > 0) pdf.addPage();
-  }
-
-  pdf.save("cv.pdf");
-}
+const defaultCVData: CVData = {
+  header: { links: [] },
+  personal: { fullName: "", email: "", phone: "", location: "", summary: "" },
+  experience: [],
+  education: [],
+  skills: [],
+  projects: [],
+};
 
 // ─── Default data ─────────────────────────────────────────────────────────────
 
@@ -817,10 +779,13 @@ export default function CVBuilderPage() {
     []
   );
 
+  const { exportToPDF } = useCVExport();
+  const [exporting, setExporting] = useState(false);
+
   const handleExport = async () => {
     setExporting(true);
     try {
-      await exportCVToPDF(cvRef);
+      await exportToPDF(cvRef);
     } finally {
       setExporting(false);
     }
