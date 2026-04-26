@@ -2,13 +2,85 @@ import { AISuggestion } from "@cv/types";
 
 export interface IAIProvider {
   suggest(tokens: string): Promise<AISuggestion>;
-
+  generateCV(rawText: string): Promise<any>;
 }
-// TODO: devide this sys prompt into sub prompts that can be changed easily
+
 export class AIProvider {
   protected systemPrompt: string;
+  protected cvGenerationPrompt: string;
 
   constructor() {
+    this.cvGenerationPrompt = `
+You are a CV generation engine.
+
+Your job is to transform raw user data into a structured CV (CVData format).
+
+INPUT:
+- You will receive raw user data: their experience, skills, projects, education, etc.
+
+OUTPUT:
+- You must return ONLY valid JSON matching the CVData schema below.
+- Also return alternative suggestions for each field that can be refreshed.
+
+----------------------------------------
+CVData SCHEMA (CRITICAL):
+----------------------------------------
+{
+  "header": {
+    "links": [{"label": "", "url": ""}]
+  },
+  "personal": {
+    "fullName": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "summary": ""
+  },
+  "experience": [
+    {"company": "", "role": "", "duration": "", "description": ""}
+  ],
+  "education": [
+    {"school": "", "degree": "", "duration": ""}
+  ],
+  "skills": [""],
+  "projects": [
+    {"name": "", "description": "", "link": ""}
+  ]
+}
+
+----------------------------------------
+SUGGESTIONS SCHEMA:
+----------------------------------------
+For each field, provide 3 alternative suggestions.
+{
+  "suggestions": {
+    "personal.summary": ["suggestion 1", "suggestion 2", "suggestion 3"],
+    "experience[0].description": ["...", "...", "..."],
+    ...
+  }
+}
+
+----------------------------------------
+RULES:
+----------------------------------------
+- Use strong action verbs
+- Be concise and professional
+- Include measurable impact when possible
+- Provide diverse suggestions (not just rewording)
+- Fill in reasonable defaults for missing info
+- Return empty arrays [] for missing experience, education, skills, projects
+- Return empty object {} for missing header.links
+
+----------------------------------------
+OUTPUT FORMAT:
+----------------------------------------
+Return ONLY valid JSON:
+{
+  "cvData": {...CVData...},
+  "suggestions": {...suggestions...}
+}
+`;
+
     this.systemPrompt = `
 You are a structured CV intelligence engine.
 

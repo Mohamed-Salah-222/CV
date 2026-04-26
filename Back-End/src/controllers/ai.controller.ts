@@ -71,3 +71,42 @@ export async function getAISuggestion(_req: Request, res: Response) {
     });
   }
 }
+
+export async function generateCV(_req: Request, res: Response) {
+  try {
+    const { rawText } = _req.body;
+
+    if (!rawText || typeof rawText !== "string") {
+      res.status(400).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: "rawText is required",
+      });
+      return;
+    }
+
+    const ai = new GeminiAIProvider(env.GEMINI_API_KEY!);
+    const result = await ai.generateCV(rawText);
+
+    if (!result.data) {
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: result.error || "Failed to generate CV",
+      });
+      return;
+    }
+
+    res.json({
+      status: "success",
+      timestamp: new Date().toISOString(),
+      data: result.data,
+    });
+  } catch (e: any) {
+    res.status(500).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      error: e.message,
+    });
+  }
+}

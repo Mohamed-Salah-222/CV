@@ -23,6 +23,19 @@ enum LocationType {
   ONSITE
 }
 
+model CV {
+  id          String   @id @default(uuid())
+  userId      String   @default("1")
+  templateId  String?
+  data       Json?
+  title      String?  @default("Untitled CV")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@map("cvs")
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique

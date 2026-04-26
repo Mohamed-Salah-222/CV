@@ -45,4 +45,11 @@ interface CVData {
   }[];
 }
 
-export type { Template, TemplateField, CVData, fields, itemFields };
+interface AIGeneratedCV {
+  cvData: CVData;
+  suggestions: {
+    [fieldId: string]: string[];
+  };
+}
+
+export type { Template, TemplateField, CVData, AIGeneratedCV, fields, itemFields };

@@ -7,30 +7,54 @@ import {
 } from "react";
 import type { templateTypes } from "@cv/types";
 import { env } from "@/config/env";
+import { useSettings } from "@/contexts/SettingsContext";
+import { fetchGitHubData } from "@/lib/github";
 
 type CVData = templateTypes.CVData;
-// ─── PDF export (CV element only) ────────────────────────────────────────────
 
-
-
-async function saveCV(cvData: CVData) {
-  try {
-    await fetch(`${env.API_URL}/api/users/me/cvs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        cv_id: "something",
-        template_id: "something",
-        data: cvData,
-      }),
-    });
-
-  } catch (e) {
-    console.error(e)
-  }
+interface AIGeneratedCV {
+  cvData: CVData;
+  suggestions: Record<string, string[]>;
 }
+
+async function generateCVFromAI(rawText: string): Promise<AIGeneratedCV | null> {
+  const res = await fetch(`${env.API_URL}/api/ai/generate-cv`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rawText }),
+  });
+  const json = await res.json();
+  if (json.status === "success" && json.data) {
+    return json.data;
+  }
+  return null;
+}
+
+async function createCV(cvData: CVData) {
+  const res = await fetch(`${env.API_URL}/api/users/me/cvs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template_id: "default",
+      title: cvData.personal.fullName || "Untitled CV",
+      data: cvData,
+    }),
+  });
+  const json = await res.json();
+  return json.data?.id ?? null;
+}
+
+async function updateCV(id: string, cvData: CVData) {
+  await fetch(`${env.API_URL}/api/users/me/cvs/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: cvData.personal.fullName || "Untitled CV",
+      data: cvData,
+    }),
+  });
+}
+
 async function exportCVToPDF(cvRef: RefObject<HTMLDivElement | null>) {
   const el = cvRef.current;
   if (!el) return;
@@ -685,7 +709,128 @@ export default function CVBuilderPage() {
   const [activeSection, setActiveSection] = useState<SectionId>("personal");
   const [cvData, setCVData] = useState<CVData>(defaultCVData);
   const [exporting, setExporting] = useState(false);
+  const [currentCVId, setCurrentCVId] = useState<string | null>(null);
+  const currentCVIdRef = useRef<string | null>(null);
+  const hasInitializedRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const cvRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { settings } = useSettings();
+  const autoSaveEnabled = settings?.autoSave ?? true;
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, string[]> | null>(null);
+  const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    if (id) {
+      async function loadCV() {
+        try {
+          const res = await fetch(`${env.API_URL}/api/users/me/cvs/${id}`);
+          const json = await res.json();
+          if (json.data?.data) {
+            setCVData(json.data.data as CVData);
+            setCurrentCVId(id);
+            currentCVIdRef.current = id;
+          }
+        } catch (e) {
+          console.error("Failed to load CV:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      loadCV();
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleGenerateFromAI = useCallback(async (rawText: string) => {
+    setGenerateError(null);
+    setIsGenerating(true);
+    try {
+      const result = await generateCVFromAI(rawText);
+      if (!result) {
+        setGenerateError("Failed to generate CV. Please try again.");
+        return;
+      }
+      
+      setCVData(result.cvData);
+      setAiSuggestions(result.suggestions);
+      hasInitializedRef.current = true;
+
+      const newId = await createCV(result.cvData);
+      if (newId) {
+        setCurrentCVId(newId);
+        currentCVIdRef.current = newId;
+        window.history.replaceState(null, "", `?id=${newId}`);
+      }
+    } catch (e: any) {
+      console.error("Failed to generate CV:", e);
+      setGenerateError(e.message || "Failed to generate CV. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, []);
+
+  const doSave = useCallback(async (data: CVData) => {
+    setSaving(true);
+    try {
+      const id = currentCVIdRef.current;
+      if (id) {
+        await updateCV(id, data);
+      } else {
+        const newId = await createCV(data);
+        if (newId) {
+          setCurrentCVId(newId);
+          currentCVIdRef.current = newId;
+          hasInitializedRef.current = true;
+          window.history.replaceState(null, "", `?id=${newId}`);
+        }
+      }
+      setLastSaved(new Date());
+    } catch (e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const handleSave = useCallback(() => {
+    doSave(cvData);
+  }, [doSave, cvData]);
+
+  const scheduleAutoSave = useCallback((data: CVData) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      doSave(data);
+    }, 1500);
+  }, [doSave]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      return;
+    }
+    if (!autoSaveEnabled) return;
+    scheduleAutoSave(cvData);
+  }, [cvData, isLoading, autoSaveEnabled]);
 
   const updatePersonal = useCallback(
     (personal: CVData["personal"]) => setCVData((d) => ({ ...d, personal })),
@@ -724,19 +869,33 @@ export default function CVBuilderPage() {
 
   return (
     <div style={s.page}>
+      {isLoading && (
+        <div style={{ ...s.page, placeItems: "center", position: "absolute", inset: 0, background: "#f5f4f1" }}>
+          Loading...
+        </div>
+      )}
       {/* Top bar */}
       <div style={s.topbar}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={s.logo}>CV Builder</span>
           <span style={s.badge}>Live preview</span>
         </div>
-        <button
-          style={{ ...s.btn, ...s.btnPrimary, opacity: exporting ? 0.6 : 1 }}
-          onClick={handleExport}
-          disabled={exporting}
-        >
-          {exporting ? "Exporting…" : "Export PDF"}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            style={s.btn}
+            onClick={() => setShowAIGenerateModal(true)}
+            disabled={isGenerating}
+          >
+            {isGenerating ? "Generating..." : "Generate with AI"}
+          </button>
+          <button
+            style={{ ...s.btn, ...s.btnPrimary, opacity: exporting ? 0.6 : 1 }}
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            {exporting ? "Exporting…" : "Export PDF"}
+          </button>
+        </div>
       </div>
 
       {/* Sidebar nav + form */}
@@ -789,10 +948,109 @@ export default function CVBuilderPage() {
       {/* Live preview */}
       <main style={s.previewPane}>
         <CVPreview data={cvData} cvRef={cvRef} />
-        <button style={s.btn} onClick={() => saveCV(cvData)}>
-          Save CV
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
+          <button style={s.btn} onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : currentCVId ? "Save" : "Create CV"}
+          </button>
+          {lastSaved && (
+            <span style={s.savedIndicator}>
+              Saved at {lastSaved.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </main>
+
+      {/* AI Generate Modal */}
+      {showAIGenerateModal && (
+        <div style={s.modalOverlay} onClick={() => !isGenerating && setShowAIGenerateModal(false)}>
+          <div style={s.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <h2 style={{ margin: 0 }}>Generate CV with AI</h2>
+              <button
+                style={s.modalCloseBtn}
+                onClick={() => !isGenerating && setShowAIGenerateModal(false)}
+                disabled={isGenerating}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: 20 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
+                  Enter your experience, skills, or paste your resume text:
+                </label>
+                <textarea
+                  id="ai-generate-text"
+                  style={{ ...s.input, width: "100%", minHeight: 200, resize: "vertical", fontFamily: "inherit" }}
+                  placeholder="Paste your resume, LinkedIn summary, or describe your experience..."
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
+                  Or enter GitHub URL / username:
+                </label>
+                <input
+                  id="ai-generate-github"
+                  style={{ ...s.input, width: "100%" }}
+                  placeholder="github.com/username or just username"
+                />
+              </div>
+
+              {generateError && (
+                <div style={{ padding: "12px", background: "#fee2e2", borderRadius: 8, color: "#dc2626", marginBottom: 16 }}>
+                  {generateError}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button
+                  style={s.btn}
+                  onClick={() => setShowAIGenerateModal(false)}
+                  disabled={isGenerating}
+                >
+                  Cancel
+                </button>
+                <button
+                  style={{ ...s.btn, ...s.btnPrimary }}
+                  onClick={async () => {
+                    const textInput = document.getElementById("ai-generate-text") as HTMLTextAreaElement;
+                    const githubInput = document.getElementById("ai-generate-github") as HTMLInputElement;
+                    
+                    const rawText = textInput?.value?.trim() || githubInput?.value?.trim();
+                    if (!rawText) {
+                      setGenerateError("Please enter some text or a GitHub URL.");
+                      return;
+                    }
+
+                    if (githubInput?.value?.trim()) {
+                      setGenerateError(null);
+                      setIsGenerating(true);
+                      try {
+                        const githubData = await fetchGitHubData(githubInput.value.trim());
+                        await handleGenerateFromAI(githubData);
+                        setShowAIGenerateModal(false);
+                      } catch (e: any) {
+                        console.error("Failed to fetch GitHub:", e);
+                        setGenerateError(e.message || "Failed to fetch GitHub data");
+                      } finally {
+                        setIsGenerating(false);
+                      }
+                    } else {
+                      await handleGenerateFromAI(rawText);
+                      setShowAIGenerateModal(false);
+                    }
+                  }}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? "Generating..." : "Generate"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -846,6 +1104,47 @@ const s = {
     background: "#1a1a1a",
     color: "#fff",
     border: "none",
+  } as React.CSSProperties,
+
+  savedIndicator: {
+    fontSize: 11,
+    color: "#888",
+  } as React.CSSProperties,
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  } as React.CSSProperties,
+
+  modalContent: {
+    background: "#fff",
+    borderRadius: 12,
+    width: "100%",
+    maxWidth: 500,
+    maxHeight: "90vh",
+    overflow: "auto",
+  } as React.CSSProperties,
+
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "16px 20px",
+    borderBottom: "0.5px solid rgba(0,0,0,0.1)",
+  } as React.CSSProperties,
+
+  modalCloseBtn: {
+    background: "none",
+    border: "none",
+    fontSize: 18,
+    cursor: "pointer",
+    color: "#666",
+    padding: 4,
   } as React.CSSProperties,
 
   sidebar: {

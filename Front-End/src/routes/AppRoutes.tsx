@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import TempalteViewPage from "@/pages/TemplateViewPage";
 import TemplateDetailPage from "@/pages/TemplateDetailPage";
 import CVBuilderPage from "@/pages/CVBuilderPage";
+import CVsPage from "@/pages/CVsPage";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -20,6 +21,7 @@ export default function AppRoutes() {
         <Link to="/health" className="font-medium">Health</Link>
         <Link to="/ai" className="font-medium">AI</Link>
         <Link to="/templates" className="font-medium">TemplateView</Link>
+        <Link to="/cvs" className="font-medium">My CVs</Link>
 
         <Show when="signed-in">
           <Link to="/dashboard" className="font-medium">Dashboard</Link>
@@ -52,6 +54,7 @@ export default function AppRoutes() {
         <Route path="/templates" element={<TempalteViewPage />} />
         <Route path="/template/:name" element={<TemplateDetailPage />} />
         <Route path="/cv-builder" element={<CVBuilderPage />} />
+        <Route path="/cvs" element={<CVsPage />} />
         <Route path="/sign-in/*" element={<SignInPage />} />
         <Route path="/sign-up/*" element={<SignUpPage />} />
         <Route
