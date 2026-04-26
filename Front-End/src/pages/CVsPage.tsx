@@ -14,21 +14,7 @@ export default function CVsPage() {
   const [cvs, setCvs] = useState<CV[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { fetchCVs, deleteCV } = useCVService();
-
-  useEffect(() => {
-    async function loadCVs() {
-      try {
-        const data = await fetchCVs();
-        setCvs(data || []);
-      } catch (e: any) {
-        setError(e.message || "Failed to fetch CVs");
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadCVs();
-  }, [fetchCVs]);
+const { fetchCVs, deleteCV, duplicateCV } = useCVService();
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this CV?")) return;
@@ -37,6 +23,17 @@ export default function CVsPage() {
       setCvs(cvs.filter((cv) => cv.id !== id));
     } catch (e: any) {
       alert(e.message || "Failed to delete CV");
+    }
+  };
+
+  const handleDuplicate = async (id: string) => {
+    try {
+      const newId = await duplicateCV(id);
+      if (newId) {
+        setCvs(cvs.map((cv) => cv)); // Refresh list
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to duplicate CV");
     }
   };
 
@@ -120,6 +117,19 @@ export default function CVsPage() {
                 }}
               >
                 Delete
+              </button>
+              <button
+                onClick={() => handleDuplicate(cv.id)}
+                style={{
+                  padding: "6px 12px",
+                  background: "transparent",
+                  border: "0.5px solid rgba(0,0,0,0.1)",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  color: "#666",
+                }}
+              >
+                Duplicate
               </button>
             </div>
           ))}

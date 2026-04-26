@@ -51,6 +51,12 @@ export function useCVService() {
     return cvApi.generateCVRequest(token, rawText);
   }, [getToken]);
 
+  const duplicateCV = useCallback(async (id: string) => {
+    const token = await getToken();
+    if (!token) return null;
+    return cvApi.duplicateCVRequest(id, token);
+  }, [getToken]);
+
   return {
     fetchCVs,
     fetchCV,
@@ -58,5 +64,6 @@ export function useCVService() {
     updateCV,
     deleteCV,
     generateCV,
+    duplicateCV,
   };
 }

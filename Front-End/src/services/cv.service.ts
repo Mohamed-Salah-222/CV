@@ -103,3 +103,16 @@ export async function generateCVRequest(token: string, rawText: string): Promise
   if (json.status === "success" && json.data) return json.data;
   return null;
 }
+
+export async function duplicateCVRequest(id: string, token: string): Promise<string | null> {
+  if (!token) return null;
+
+  const res = await fetch(`${env.API_URL}/api/users/me/cvs/${id}/duplicate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+
+  const json = await parseJSON(res);
+  return json.data?.id ?? null;
+}

@@ -246,3 +246,31 @@ export async function getUserCV(req: Request, res: Response) {
     });
   }
 }
+export async function duplicateUserCV(req: Request, res: Response) {
+  const id = req.params.id;
+  const userId = await getUserIdFromClerk(req);
+  if (!userId) {
+    res.status(401).json({ status: "error", timestamp: new Date().toISOString(), error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const existingCv = await prisma.cV.findFirst({ where: { id: id as string, userId } });
+    if (!existingCv) {
+      res.status(404).json({ status: "error", timestamp: new Date().toISOString(), error: "CV not found" });
+      return;
+    }
+
+    const newCv = await prisma.cV.create({
+      data: { 
+        userId, 
+        templateId: existingCv.templateId, 
+        data: existingCv.data as any, 
+        title: `Copy of ${existingCv.title || "Untitled CV"}` 
+      },
+    });
+    res.json({ status: "success", timestamp: new Date().toISOString(), data: newCv });
+  } catch (e: any) {
+    res.status(500).json({ status: "error", timestamp: new Date().toISOString(), error: e.message });
+  }
+}
