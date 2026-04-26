@@ -8,7 +8,7 @@ import {
 import type { templateTypes } from "@cv/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { fetchGitHubData } from "@/lib/github";
-import * as cvService from "@/services/cv.service";
+import { useCVService } from "@/hooks/useCVService";
 
 type CVData = templateTypes.CVData;
 
@@ -676,6 +676,7 @@ export default function CVBuilderPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { settings } = useSettings();
   const autoSaveEnabled = settings?.autoSave ?? true;
+  const { fetchCV, createCV, updateCV, generateCV } = useCVService();
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, string[]> | null>(null);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
@@ -689,7 +690,7 @@ export default function CVBuilderPage() {
     if (id) {
       async function loadCV() {
         try {
-          const cvData = await cvService.fetchCV(id);
+          const cvData = await fetchCV(id);
           if (cvData) {
             setCVData(cvData);
             setCurrentCVId(id);
@@ -711,7 +712,7 @@ export default function CVBuilderPage() {
     setGenerateError(null);
     setIsGenerating(true);
     try {
-      const result = await cvService.generateCVFromAI(rawText);
+      const result = await generateCV(rawText);
       if (!result) {
         setGenerateError("Failed to generate CV. Please try again.");
         return;
@@ -721,7 +722,7 @@ export default function CVBuilderPage() {
       setAiSuggestions(result.suggestions);
       hasInitializedRef.current = true;
 
-      const newId = await cvService.createCV(result.cvData);
+      const newId = await createCV(result.cvData);
       if (newId) {
         setCurrentCVId(newId);
         currentCVIdRef.current = newId;
@@ -740,9 +741,9 @@ export default function CVBuilderPage() {
     try {
       const id = currentCVIdRef.current;
       if (id) {
-        await cvService.updateCV(id, data);
+        await updateCV(id, data);
       } else {
-        const newId = await cvService.createCV(data);
+        const newId = await createCV(data);
         if (newId) {
           setCurrentCVId(newId);
           currentCVIdRef.current = newId;

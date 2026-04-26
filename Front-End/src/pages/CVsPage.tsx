@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { fetchCVs, deleteCV } from "@/services/cv.service";
+import { useCVService } from "@/hooks/useCVService";
 
 interface CV {
   id: string;
@@ -14,6 +14,7 @@ export default function CVsPage() {
   const [cvs, setCvs] = useState<CV[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchCVs, deleteCV } = useCVService();
 
   useEffect(() => {
     async function loadCVs() {
@@ -27,7 +28,7 @@ export default function CVsPage() {
       }
     }
     loadCVs();
-  }, []);
+  }, [fetchCVs]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this CV?")) return;
