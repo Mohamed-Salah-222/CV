@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/react";
 import { useCallback } from "react";
-import * as cvApi from "./cv.service";
+import * as cvApi from "../services/cv.service";
 import type { templateTypes } from "@cv/types";
 
 type CVData = templateTypes.CVData;
