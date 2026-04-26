@@ -6,12 +6,27 @@ async function getUserIdFromClerk(req: Request): Promise<string | null> {
   const { userId } = getAuth(req);
   if (!userId) return null;
   
-  const user = await prisma.user.findUnique({
+  // Try to find existing user
+  let user = await prisma.user.findUnique({
     where: { clerkId: userId },
     select: { id: true },
   });
   
-  return user?.id ?? null;
+  // If no user found, create one (fallback - ideally webhook handles this)
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        clerkId: userId,
+        email: `${userId}@placeholder.com`,
+        firstName: "",
+        lastName: "",
+      },
+      select: { id: true },
+    });
+    console.log("Created user:", user.id, "for clerkId:", userId);
+  }
+  
+  return user.id;
 }
 
 export async function updateUserCV(req: Request, res: Response) {

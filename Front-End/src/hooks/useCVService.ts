@@ -11,13 +11,15 @@ export interface AICVResponse {
 }
 
 export function useCVService() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
 
   const fetchCVs = useCallback(async () => {
+    console.log("useCVService fetchCVs - isSignedIn:", isSignedIn);
     const token = await getToken();
+    console.log("useCVService - token:", token ? "exists" : "null", token?.substring(0, 30) ?? "");
     if (!token) return [];
     return cvApi.fetchCVsRequest(token);
-  }, [getToken]);
+  }, [getToken, isSignedIn]);
 
   const fetchCV = useCallback(async (id: string) => {
     const token = await getToken();

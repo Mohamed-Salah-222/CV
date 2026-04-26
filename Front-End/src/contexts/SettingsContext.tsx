@@ -6,7 +6,7 @@ interface Settings {
 }
 
 interface SettingsContextValue {
-  settings: Settings | null;
+  settings: Settings;
   loading: boolean;
 }
 
@@ -20,43 +20,62 @@ const SettingsContext = createContext<SettingsContextValue>({
 });
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [loading, setLoading] = useState(true);
-  const { getToken, isLoaded } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      console.log("SettingsProvider - Clerk not loaded yet");
+      return;
+    }
+
+    console.log("SettingsProvider - isSignedIn:", isSignedIn);
 
     async function fetchSettings() {
       try {
         const token = await getToken();
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (token) headers.Authorization = `Bearer ${token}`;
+        console.log("SettingsProvider - token:", token ? "exists" : "null");
 
-        const res = await fetch(`/api/users/me/settings`, { headers });
-        
-        // If not logged in (401/redirect to login), use defaults
-        if (!res.ok) {
+        if (!token) {
           setSettings(defaultSettings);
           setLoading(false);
           return;
         }
-        
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        };
+
+        const res = await fetch(`/api/users/me/settings`, { headers });
+        console.log("SettingsProvider - response status:", res.status);
+
+        if (!res.ok) {
+          console.log("SettingsProvider - failed, using defaults");
+          setSettings(defaultSettings);
+          setLoading(false);
+          return;
+        }
+
         const json = await res.json();
+        console.log("SettingsProvider - response:", json);
+
         if (json.status === "success" && json.data) {
           setSettings(json.data);
         } else {
           setSettings(defaultSettings);
         }
       } catch (e) {
-        console.error("Failed to fetch settings:", e);
+        console.error("SettingsProvider - error:", e);
         setSettings(defaultSettings);
       } finally {
         setLoading(false);
       }
     }
+
     fetchSettings();
-  }, [getToken, isLoaded]);
+  }, [getToken, isLoaded, isSignedIn]);
 
   return (
     <SettingsContext.Provider value={{ settings, loading }}>

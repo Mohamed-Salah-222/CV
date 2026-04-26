@@ -675,7 +675,7 @@ export default function CVBuilderPage() {
   const cvRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { settings } = useSettings();
-  const autoSaveEnabled = settings?.autoSave ?? true;
+  const autoSaveEnabled = settings.autoSave;
   const { fetchCV, createCV, updateCV, generateCV } = useCVService();
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, string[]> | null>(null);
