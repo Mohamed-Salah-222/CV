@@ -57,3 +57,42 @@ export async function generateCV(_req: Request, res: Response) {
     });
   }
 }
+
+export async function improveField(_req: Request, res: Response) {
+  try {
+    const { fieldType, currentText, context } = _req.body;
+
+    if (!fieldType || !currentText) {
+      res.status(400).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: "fieldType and currentText are required",
+      });
+      return;
+    }
+
+    const ai = new GeminiAIProvider(env.GEMINI_API_KEY!);
+    const result = await ai.improveField(fieldType, currentText, context);
+
+    if (!result.data) {
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: result.error || "Failed to improve field",
+      });
+      return;
+    }
+
+    res.json({
+      status: "success",
+      timestamp: new Date().toISOString(),
+      data: result.data,
+    });
+  } catch (e: any) {
+    res.status(500).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      error: e.message,
+    });
+  }
+}

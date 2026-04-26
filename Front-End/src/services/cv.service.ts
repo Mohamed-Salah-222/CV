@@ -116,3 +116,27 @@ export async function duplicateCVRequest(id: string, token: string): Promise<str
   const json = await parseJSON(res);
   return json.data?.id ?? null;
 }
+
+export interface ImproveFieldResponse {
+  improvements: { text: string; reasoning: string }[];
+}
+
+export async function improveFieldRequest(
+  token: string,
+  fieldType: string,
+  currentText: string,
+  context?: string
+): Promise<ImproveFieldResponse | null> {
+  if (!token) return null;
+
+  const res = await fetch(`${env.API_URL}/api/ai/improve-field`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ fieldType, currentText, context }),
+  });
+  if (!res.ok) return null;
+
+  const json = await parseJSON(res);
+  if (json.status === "success" && json.data) return json.data;
+  return null;
+}

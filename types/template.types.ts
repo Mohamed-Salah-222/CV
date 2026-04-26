@@ -42,7 +42,10 @@ interface CVData {
     name: string;
     description: string;
     link: string;
+    label?: string;
   }[];
+  sectionOrder?: string[];
+  templateId?: string;
 }
 
 interface AIGeneratedCV {

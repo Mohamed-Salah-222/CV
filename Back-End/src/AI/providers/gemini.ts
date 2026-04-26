@@ -92,6 +92,55 @@ export class GeminiAIProvider extends AIProvider implements IAIProvider {
       return { data: null, score: 0 };
     }
   }
+
+  async improveField(fieldType: string, currentText: string, context?: string): Promise<any> {
+    try {
+      const inputText = context 
+        ? `fieldType: ${fieldType}\ncurrentText: ${currentText}\ncontext: ${context}`
+        : `fieldType: ${fieldType}\ncurrentText: ${currentText}`;
+
+      const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-goog-api-key": this.apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${this.improveFieldPrompt}\n\n${inputText}`
+                  }
+                ]
+              }
+            ],
+          }),
+        }
+      );
+
+      const data = await response.json() as any;
+      let text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+      if (!text) {
+        return { data: null, error: "No response from AI" };
+      }
+
+      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      try {
+        const parsed = JSON.parse(text);
+        return { data: parsed, score: 1 };
+      } catch {
+        return { data: null, error: "Failed to parse AI response" };
+      }
+    } catch (e) {
+      console.log("error: ", e)
+      return { data: null, score: 0 };
+    }
+  }
 }
 
 

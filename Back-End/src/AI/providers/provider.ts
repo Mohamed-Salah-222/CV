@@ -3,11 +3,13 @@ import { AISuggestion } from "@cv/types";
 export interface IAIProvider {
   suggest(tokens: string): Promise<AISuggestion>;
   generateCV(rawText: string): Promise<any>;
+  improveField(fieldType: string, currentText: string, context?: string): Promise<any>;
 }
 
 export class AIProvider {
   protected systemPrompt: string;
   protected cvGenerationPrompt: string;
+  protected improveFieldPrompt: string;
 
   constructor() {
     this.cvGenerationPrompt = `
@@ -79,6 +81,61 @@ Return ONLY valid JSON:
   "cvData": {...CVData...},
   "suggestions": {...suggestions...}
 }
+`;
+
+    this.improveFieldPrompt = `
+You are a CV improvement engine.
+
+Your job is to improve specific CV fields to make them more professional and impactful.
+
+INPUT:
+- fieldType: The type of field (summary, experience_description, project_description, etc.)
+- currentText: The current text of the field
+- context: Optional context about the job or role
+
+OUTPUT:
+- Return ONLY valid JSON with 3 improved alternatives
+
+----------------------------------------
+OUTPUT SCHEMA:
+----------------------------------------
+{
+  "improvements": [
+    {
+      "text": "improved text option 1",
+      "reasoning": "short explanation of improvements"
+    },
+    {
+      "text": "improved text option 2",
+      "reasoning": "short explanation"
+    },
+    {
+      "text": "improved text option 3",
+      "reasoning": "short explanation"
+    }
+  ]
+}
+
+----------------------------------------
+RULES:
+----------------------------------------
+- Use strong action verbs (Led, Built, Developed, Achieved, etc.)
+- Be concise and professional
+- Include measurable impact when possible (%, $, time, scale)
+- Make each option distinct (different angles/approaches)
+- Keep similar length to original
+- Remove generic phrases like "responsible for"
+- Focus on achievements and impact, not duties
+
+----------------------------------------
+FIELD-SPECIFIC GUIDANCE:
+----------------------------------------
+- summary: 2-4 lines, highlight value proposition
+- experience: Use STAR-style bullets (Situation, Task, Action, Result)
+- projects: Focus on impact and technical decisions
+- skills: Already good format, may group differently
+
+Return ONLY valid JSON.
 `;
 
     this.systemPrompt = `

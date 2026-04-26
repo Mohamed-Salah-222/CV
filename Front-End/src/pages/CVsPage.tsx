@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCVService } from "@/hooks/useCVService";
+import { toast } from "sonner";
 
 interface CV {
   id: string;
@@ -14,15 +15,23 @@ export default function CVsPage() {
   const [cvs, setCvs] = useState<CV[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-const { fetchCVs, deleteCV, duplicateCV } = useCVService();
+  const { fetchCVs, deleteCV, duplicateCV } = useCVService();
+
+  useEffect(() => {
+    fetchCVs()
+      .then(setCvs)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [fetchCVs]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this CV?")) return;
     try {
       await deleteCV(id);
       setCvs(cvs.filter((cv) => cv.id !== id));
+      toast.success("CV deleted");
     } catch (e: any) {
-      alert(e.message || "Failed to delete CV");
+      toast.error(e.message || "Failed to delete CV");
     }
   };
 
@@ -30,10 +39,10 @@ const { fetchCVs, deleteCV, duplicateCV } = useCVService();
     try {
       const newId = await duplicateCV(id);
       if (newId) {
-        setCvs(cvs.map((cv) => cv)); // Refresh list
+        toast.success("CV duplicated");
       }
     } catch (e: any) {
-      alert(e.message || "Failed to duplicate CV");
+      toast.error(e.message || "Failed to duplicate CV");
     }
   };
 

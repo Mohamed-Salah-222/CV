@@ -2,6 +2,7 @@ import { useAuth } from "@clerk/react";
 import { useCallback } from "react";
 import * as cvApi from "../services/cv.service";
 import type { templateTypes } from "@cv/types";
+import { toast } from "sonner";
 
 type CVData = templateTypes.CVData;
 
@@ -57,6 +58,12 @@ export function useCVService() {
     return cvApi.duplicateCVRequest(id, token);
   }, [getToken]);
 
+  const improveField = useCallback(async (fieldType: string, currentText: string, context?: string) => {
+    const token = await getToken();
+    if (!token) return null;
+    return cvApi.improveFieldRequest(token, fieldType, currentText, context);
+  }, [getToken]);
+
   return {
     fetchCVs,
     fetchCV,
@@ -65,5 +72,6 @@ export function useCVService() {
     deleteCV,
     generateCV,
     duplicateCV,
+    improveField,
   };
 }

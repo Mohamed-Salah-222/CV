@@ -36,7 +36,7 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
   const hasInitializedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { fetchCV, createCV, updateCV, generateCV } = useCVService();
+  const { fetchCV, createCV, updateCV } = useCVService();
 
   const loadCV = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -46,12 +46,15 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
         setCVData(data);
         setCurrentCVId(id);
         currentCVIdRef.current = id;
+        // Return the templateId if present
+        return data.templateId;
       }
     } catch (e) {
       console.error("Failed to load CV:", e);
     } finally {
       setIsLoading(false);
     }
+    return undefined;
   }, [fetchCV]);
 
   const doSave = useCallback(async (data: CVData) => {
@@ -76,8 +79,8 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
     }
   }, [createCV, updateCV]);
 
-  const handleSave = useCallback(() => {
-    doSave(cvData);
+  const handleSave = useCallback((dataOverride?: CVData) => {
+    doSave(dataOverride || cvData);
   }, [doSave, cvData]);
 
   const scheduleAutoSave = useCallback((data: CVData) => {
@@ -99,19 +102,26 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     if (id) {
+      // Mark as initialized before loading - we'll save after load completes
+      hasInitializedRef.current = true;
       loadCV(id);
     } else {
       setIsLoading(false);
     }
   }, [loadCV]);
 
-  // Initialize from URL param loaded
+  // Auto-save when data changes (debounced) - but skip the first save after loading
+  const isInitialLoadRef = useRef(true);
   useEffect(() => {
     if (isLoading) return;
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
+    if (!currentCVIdRef.current) return;
+    
+    // Skip the very first trigger after loading an existing CV
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
       return;
     }
+    
     scheduleAutoSave(cvData);
   }, [cvData, isLoading, scheduleAutoSave]);
 
