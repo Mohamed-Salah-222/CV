@@ -61,7 +61,7 @@ export async function parseCV(_req: Request, res: Response) {
     const newCv = await prisma.cV.create({
       data: {
         userId,
-        data: result.data,
+        data: result.data.cvData,
         templateId: "default",
         title: "AI Parsed CV",
       },
@@ -70,7 +70,7 @@ export async function parseCV(_req: Request, res: Response) {
     res.json({
       status: "success",
       timestamp: new Date().toISOString(),
-      data: { cvData: result.data, cvId: newCv.id },
+      data: { cvData: result.data.cvData, ghostTextSuggestions: result.data.ghostTextSuggestions, cvId: newCv.id },
     });
   } catch (e: any) {
     res.status(500).json({
@@ -130,7 +130,7 @@ export async function generateCV(_req: Request, res: Response) {
     res.json({
       status: "success",
       timestamp: new Date().toISOString(),
-      data: { cvData: result.data.cvData, suggestions: result.data.suggestions, cvId: newCv.id },
+      data: { cvData: result.data.cvData, ghostTextSuggestions: result.data.ghostTextSuggestions, cvId: newCv.id },
     });
   } catch (e: any) {
     res.status(500).json({
@@ -183,3 +183,5 @@ export async function improveField(_req: Request, res: Response) {
     });
   }
 }
+
+

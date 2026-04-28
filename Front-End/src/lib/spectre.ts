@@ -45,78 +45,123 @@ export class Spectre {
   }
 
   register(rule: RefRule, element: Element) {
-    console.log("registering ref: ", rule, element);
     this.refs.set(rule, { id: this.genRefId(), element });
-    return element.id
+    return element.id;
   }
 
   addRefStyle(id: string, style: string) {
     const ref = this.refs.get(id);
     if (ref) {
       ref.element.style.cssText = style;
+      return;
     }
     throw new Error(`Could not find ref with id: ${id}`);
   }
 
   unregister(rule: RefRule) {
-    this.deleteRef(rule)
+    this.deleteRef(rule);
   }
 
-
   mount(content: Content) {
-    console.log(content);
-    console.log("mounting spectre");
     for (const [rule, text] of content) {
       const ref = this.getRef(rule);
-      console.log("ref: ", ref);
       if (ref) {
-        console.log("setting text: ", text);
-        ref.element.value = text;
-        console.log("setting style: ", this.baseGhostStyles);
-        ref.element.style = this.baseGhostStyles;
+        if ('value' in ref.element) {
+          ref.element.value = text;
+        } else {
+          ref.element.textContent = text;
+        }
+        Object.assign(ref.element.style, this.baseGhostStyles);
       }
     }
   }
+
   accept(rule: RefRule) {
-    console.log("accepting ref style: ", rule);
-
     const ref = this.getRef(rule);
-
     if (ref) {
       Object.assign(ref.element.style, this.baseAcceptedStyles);
-      console.log("applied style:", ref.element.style);
       return;
     }
-
     throw new Error(`Could not find ref with id: ${rule}`);
   }
-  // accept(rule: RefRule) {
-  //   console.log("accepting ref style: ", rule);
-  //   const ref = this.getRef(rule)
-  //   if (ref) {
-  //     ref.element.style = this.baseAcceptedStyles;
-  //     console.log("accepting ref: ", ref.element.style);
-  //     return;
-  //   }
-  //   throw new Error(`Could not find ref with id: ${rule}`);
-  // }
 
+  // --- Inline Ghost Text Support for contentEditable ---
 
-  private getRef(id: string): Ref | null {
-    const ref = this.refs.get(id);
-    if (ref) {
-      return ref;
+  showInline(rule: RefRule, text: string) {
+    const ref = this.getRef(rule);
+    if (!ref) return;
+
+    this.clearInline(rule); // Ensure no old spans exist
+
+    // Find the current text node and append the ghost span
+    const el = ref.element as HTMLElement;
+    
+    // Check if it's a contentEditable div
+    if (el.isContentEditable) {
+      const span = document.createElement('span');
+      span.className = 'spectre-inline-ghost';
+      span.contentEditable = 'false';
+      span.textContent = text;
+      Object.assign(span.style, this.baseGhostStyles);
+      span.style.pointerEvents = 'none';
+      span.style.userSelect = 'none';
+
+      // We append it to the end of the element.
+      // In a more robust system, we'd insert it at the current selection cursor.
+      el.appendChild(span);
+    } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+      // For standard inputs, inline ghost text is much harder to implement natively.
+      // We'll ignore standard inputs for inline ghost text in this MVP.
+      console.warn("Spectre inline ghost text is currently only supported on contentEditable elements.");
+    }
+  }
+
+  clearInline(rule: RefRule) {
+    const ref = this.getRef(rule);
+    if (!ref) return;
+    const el = ref.element as HTMLElement;
+    if (el.isContentEditable) {
+      const existingSpans = el.querySelectorAll('.spectre-inline-ghost');
+      existingSpans.forEach(span => span.remove());
+    }
+  }
+
+  acceptInline(rule: RefRule) {
+    const ref = this.getRef(rule);
+    if (!ref) return null;
+    const el = ref.element as HTMLElement;
+    if (el.isContentEditable) {
+      const span = el.querySelector('.spectre-inline-ghost');
+      if (span) {
+        const textToAccept = span.textContent || "";
+        span.remove();
+        
+        // Append the text natively
+        const textNode = document.createTextNode(textToAccept);
+        el.appendChild(textNode);
+        
+        // Move cursor to the end
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        
+        return textToAccept; // Return the accepted text so the caller knows what was added
+      }
     }
     return null;
   }
 
+  private getRef(id: string): Ref | null {
+    return this.refs.get(id) || null;
+  }
+
   deleteRef(id: string) {
-    const ref = this.getRef(id);
-    if (ref) {
-      console.log("deleting ref: ", ref);
-      // ref.remove();
-    }
-    return;
+    this.refs.delete(id);
   }
 
   private genRefId() {

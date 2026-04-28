@@ -60,6 +60,20 @@ CVData SCHEMA (CRITICAL):
     {"name": "", "description": "", "link": ""}
   ]
 }
+
+----------------------------------------
+OUTPUT FORMAT:
+----------------------------------------
+Return ONLY valid JSON:
+{
+  "cvData": {...CVData...},
+  "ghostTextSuggestions": {
+    "summary": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] },
+    "experience": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] },
+    "projects": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] },
+    "skills": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] }
+  }
+}
 `;
     this.cvGenerationPrompt = `
 You are a CV generation engine.
@@ -100,14 +114,17 @@ CVData SCHEMA (CRITICAL):
 }
 
 ----------------------------------------
-SUGGESTIONS SCHEMA:
+GHOST TEXT SUGGESTIONS SCHEMA:
 ----------------------------------------
-For each field, provide 3 alternative suggestions.
+For each section below, provide a rich set of suggestions for real-time autocomplete.
+Generate phrases (short snippets), sentences (complete lines), and completions.
+Aim for 10-20 items per array for variety.
 {
-  "suggestions": {
-    "personal.summary": ["suggestion 1", "suggestion 2", "suggestion 3"],
-    "experience[0].description": ["...", "...", "..."],
-    ...
+  "ghostTextSuggestions": {
+    "summary": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] },
+    "experience": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] },
+    "projects": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] },
+    "skills": { "phrases": ["..."], "sentences": ["..."], "completions": ["..."] }
   }
 }
 
@@ -128,7 +145,7 @@ OUTPUT FORMAT:
 Return ONLY valid JSON:
 {
   "cvData": {...CVData...},
-  "suggestions": {...suggestions...}
+  "ghostTextSuggestions": {...ghostTextSuggestions...}
 }
 `;
 

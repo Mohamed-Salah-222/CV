@@ -66,9 +66,10 @@ export async function updateUserCV(req: Request, res: Response) {
       return;
     }
 
-    const updateData: { data?: unknown; title?: string } = {};
+    const updateData: { data?: unknown; title?: string; ghostTextSuggestions?: unknown } = {};
     if (data !== null) updateData.data = data;
     if (title) updateData.title = title;
+    if (req.body.ghostTextSuggestions !== undefined) updateData.ghostTextSuggestions = req.body.ghostTextSuggestions;
 
     const updatedCv = await prisma.cV.update({
       where: { id },
@@ -109,6 +110,7 @@ export async function saveUserCV(req: Request, res: Response) {
         userId,
         templateId: req.body.template_id ?? "default",
         data,
+        ghostTextSuggestions: req.body.ghostTextSuggestions ?? null,
         title: req.body.title ?? "Untitled CV",
       },
     });

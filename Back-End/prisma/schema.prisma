@@ -28,6 +28,7 @@ model CV {
   userId      String
   templateId  String?
   data       Json?
+  ghostTextSuggestions Json?
   title      String?  @default("Untitled CV")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

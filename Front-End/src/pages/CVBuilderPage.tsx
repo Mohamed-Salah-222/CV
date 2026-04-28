@@ -36,7 +36,7 @@ export default function CVBuilderPage() {
   const [activeSection, setActiveSection] = useState<SectionId>("personal");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const {
-    cvData, setCVData, currentCVId, saving, lastSaved, isLoading,
+    cvData, setCVData, ghostTextSuggestions, setGhostTextSuggestions, currentCVId, saving, lastSaved, isLoading,
     handleSave, loadCV
   } = useCVData();
 
@@ -89,6 +89,7 @@ export default function CVBuilderPage() {
       if (!result) throw new Error("Parsing failed");
 
       setCVData(result.cvData);
+      if (result.ghostTextSuggestions) setGhostTextSuggestions(result.ghostTextSuggestions);
       if (result.cvId) {
         window.history.replaceState(null, "", `?id=${result.cvId}`);
       }
@@ -110,6 +111,7 @@ export default function CVBuilderPage() {
       if (!result) throw new Error("Generation failed");
 
       setCVData(result.cvData);
+      if (result.ghostTextSuggestions) setGhostTextSuggestions(result.ghostTextSuggestions);
       if (result.cvId) {
         window.history.replaceState(null, "", `?id=${result.cvId}`);
       }
@@ -208,10 +210,22 @@ export default function CVBuilderPage() {
         sectionLabels={SECTION_LABELS}
       >
         {activeSection === "personal" && (
-          <PersonalForm data={cvData.personal} onChange={(d) => setCVData({ ...cvData, personal: d })} onImprove={handleImprove} improveLoading={improveLoading} />
+          <PersonalForm 
+            data={cvData.personal} 
+            onChange={(d) => setCVData({ ...cvData, personal: d })} 
+            onImprove={handleImprove} 
+            improveLoading={improveLoading} 
+            ghostTextSuggestions={ghostTextSuggestions?.summary}
+          />
         )}
         {activeSection === "experience" && (
-          <ExperienceForm data={cvData.experience} onChange={(d) => setCVData({ ...cvData, experience: d })} onImprove={handleImprove} improveLoading={improveLoading} />
+          <ExperienceForm 
+            data={cvData.experience} 
+            onChange={(d) => setCVData({ ...cvData, experience: d })} 
+            onImprove={handleImprove} 
+            improveLoading={improveLoading} 
+            ghostTextSuggestions={ghostTextSuggestions?.experience}
+          />
         )}
         {activeSection === "education" && (
           <EducationForm data={cvData.education} onChange={(d) => setCVData({ ...cvData, education: d })} />
@@ -220,7 +234,13 @@ export default function CVBuilderPage() {
           <TagsInput tags={cvData.skills} onChange={(d) => setCVData({ ...cvData, skills: d })} />
         )}
         {activeSection === "projects" && (
-          <ProjectsForm data={cvData.projects} onChange={(d) => setCVData({ ...cvData, projects: d })} onImprove={handleImprove} improveLoading={improveLoading} />
+          <ProjectsForm 
+            data={cvData.projects} 
+            onChange={(d) => setCVData({ ...cvData, projects: d })} 
+            onImprove={handleImprove} 
+            improveLoading={improveLoading} 
+            ghostTextSuggestions={ghostTextSuggestions?.projects}
+          />
         )}
         {activeSection === "links" && (
           <LinksForm data={cvData.header.links} onChange={(d) => setCVData({ ...cvData, header: { ...cvData.header, links: d } })} />

@@ -25,7 +25,19 @@ export function EducationForm({ data, onChange }: { data: CVData["education"]; o
 }
 
 // ── Projects Form ──
-export function ProjectsForm({ data, onChange, onImprove, improveLoading }: { data: CVData["projects"]; onChange: (d: CVData["projects"]) => void; onImprove: (ft: string, t: string) => void; improveLoading: boolean }) {
+export function ProjectsForm({ 
+  data, 
+  onChange, 
+  onImprove, 
+  improveLoading,
+  ghostTextSuggestions 
+}: { 
+  data: CVData["projects"]; 
+  onChange: (d: CVData["projects"]) => void; 
+  onImprove: (ft: string, t: string) => void; 
+  improveLoading: boolean;
+  ghostTextSuggestions?: any;
+}) {
   const upd = (i: number, k: keyof CVData["projects"][number], v: string) =>
     onChange(data.map((e, idx) => (idx === i ? { ...e, [k]: v } : e)));
   return (
@@ -33,7 +45,14 @@ export function ProjectsForm({ data, onChange, onImprove, improveLoading }: { da
       {data.map((entry, i) => (
         <RepeatCard key={i} title={entry.name || `Project ${i + 1}`} canRemove={true} onRemove={() => onChange(data.filter((_, idx) => idx !== i))}>
           <TextField label="Project Name" value={entry.name} onChange={(v) => upd(i, "name", v)} placeholder="My Portfolio" />
-          <RichTextField label="Description" value={entry.description} onChange={(v) => upd(i, "description", v)} onImprove={(text) => onImprove(`projects.${i}`, text)} improveLoading={improveLoading} />
+          <RichTextField 
+            label="Description" 
+            value={entry.description} 
+            onChange={(v) => upd(i, "description", v)} 
+            onImprove={(text) => onImprove(`projects.${i}`, text)} 
+            improveLoading={improveLoading} 
+            ghostTextSuggestions={ghostTextSuggestions}
+          />
           <TextField label="Link Label" value={entry.label} onChange={(v) => upd(i, "label", v)} placeholder="GitHub" />
           <TextField label="URL" value={entry.link} onChange={(v) => upd(i, "link", v)} placeholder="https://..." />
         </RepeatCard>

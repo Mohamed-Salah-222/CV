@@ -5,7 +5,7 @@ type CVData = templateTypes.CVData;
 
 export interface AICVResponse {
   cvData: CVData;
-  suggestions?: Record<string, string[]>;
+  ghostTextSuggestions?: Record<string, any>;
   cvId?: string;
 }
 
@@ -37,7 +37,7 @@ export async function fetchCVsRequest(token: string): Promise<any> {
   return [];
 }
 
-export async function fetchCVRequest(id: string, token: string): Promise<CVData | null> {
+export async function fetchCVRequest(id: string, token: string): Promise<any | null> {
   if (!token) return null;
 
   const res = await fetch(`${env.API_URL}/api/users/me/cvs/${id}`, {
@@ -46,11 +46,11 @@ export async function fetchCVRequest(id: string, token: string): Promise<CVData 
   if (!res.ok) return null;
 
   const json = await parseJSON(res);
-  if (json.status === "success" && json.data?.data) return json.data.data as CVData;
+  if (json.status === "success" && json.data) return json.data;
   return null;
 }
 
-export async function createCVRequest(cvData: CVData, token: string, title?: string): Promise<string | null> {
+export async function createCVRequest(cvData: CVData, token: string, title?: string, ghostTextSuggestions?: any): Promise<string | null> {
   if (!token) return null;
 
   const res = await fetch(`${env.API_URL}/api/users/me/cvs`, {
@@ -60,6 +60,7 @@ export async function createCVRequest(cvData: CVData, token: string, title?: str
       template_id: "default",
       title: (title ?? cvData.personal.fullName) || "Untitled CV",
       data: cvData,
+      ghostTextSuggestions,
     }),
   });
   if (!res.ok) return null;
@@ -68,7 +69,7 @@ export async function createCVRequest(cvData: CVData, token: string, title?: str
   return json.data?.id ?? null;
 }
 
-export async function updateCVRequest(id: string, cvData: CVData, token: string, title?: string): Promise<void> {
+export async function updateCVRequest(id: string, cvData: CVData, token: string, title?: string, ghostTextSuggestions?: any): Promise<void> {
   if (!token) return;
 
   await fetch(`${env.API_URL}/api/users/me/cvs/${id}`, {
@@ -77,6 +78,7 @@ export async function updateCVRequest(id: string, cvData: CVData, token: string,
     body: JSON.stringify({
       title: (title ?? cvData.personal.fullName) || "Untitled CV",
       data: cvData,
+      ghostTextSuggestions,
     }),
   });
 }

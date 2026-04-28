@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useId } from "react";
 import styles from "../CVBuilder.module.css";
+import { useGhostText } from "@/hooks/useGhostText";
 
 const FONT_SIZES = [11, 12, 13, 14, 16, 18, 20, 24];
 
@@ -11,6 +12,7 @@ interface RichFieldProps {
   minHeight?: number;
   onImprove?: (text: string) => void;
   improveLoading?: boolean;
+  ghostTextSuggestions?: any;
 }
 
 export function RichTextField({
@@ -21,11 +23,24 @@ export function RichTextField({
   minHeight = 100,
   onImprove,
   improveLoading,
+  ghostTextSuggestions,
 }: RichFieldProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [focused, setFocused] = useState(false);
   const [fmt, setFmt] = useState({ bold: false, italic: false, underline: false });
   const lastHtml = useRef(value);
+
+  // Setup Ghost Text
+  const ruleId = useId();
+  const { 
+    spectreRef, handleInput, handleKeyDown, acceptInline, matches, clearGhostText 
+  } = useGhostText(ghostTextSuggestions, `rich-text-${ruleId}`);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      spectreRef(editorRef.current);
+    }
+  }, [spectreRef]);
 
   useEffect(() => {
     if (editorRef.current && value !== lastHtml.current) {
@@ -39,6 +54,7 @@ export function RichTextField({
     const html = editorRef.current.innerHTML;
     lastHtml.current = html;
     onChange(html);
+    handleInput(editorRef.current.textContent || "");
   };
 
   const refreshFmt = () =>
@@ -72,10 +88,21 @@ export function RichTextField({
     emit();
   };
 
+  const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    if (matches.length > 0) {
+      handleKeyDown(e);
+      if (e.key === "Tab" || e.key === "ArrowRight") {
+        // useGhostText handles the dom insertion natively via Spectre.
+        // We just need to sync the new HTML to React state.
+        setTimeout(emit, 0); 
+      }
+    }
+  };
+
   const isEmpty = !value || value === "<br>" || value === "" || value === "<div><br></div>";
 
   return (
-    <div className={styles.field}>
+    <div className={styles.field} style={{ position: "relative" }}>
       <label className={styles.fieldLabel}>{label}</label>
 
       <div className={styles.richToolbar}>
@@ -145,16 +172,55 @@ export function RichTextField({
           className={styles.richEditor}
           style={{ minHeight }}
           onFocus={() => { setFocused(true); refreshFmt(); }}
-          onBlur={() => { setFocused(false); emit(); }}
+          onBlur={() => { setFocused(false); clearGhostText(); emit(); }}
           onInput={emit}
           onKeyUp={refreshFmt}
           onMouseUp={refreshFmt}
+          onKeyDown={handleEditorKeyDown}
           onPaste={(e) => {
             e.preventDefault();
             const text = e.clipboardData.getData("text/plain");
             document.execCommand("insertText", false, text);
           }}
         />
+
+        {matches.length > 1 && (
+          <div style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            marginTop: 4,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            zIndex: 10,
+            maxHeight: 150,
+            overflowY: "auto",
+            minWidth: 200,
+          }}>
+            {matches.slice(1, 4).map((m, idx) => (
+              <div 
+                key={idx}
+                style={{
+                  padding: "8px 12px",
+                  fontSize: 13,
+                  cursor: "pointer",
+                  borderBottom: idx < matches.length - 2 ? "1px solid var(--border)" : "none",
+                  color: "var(--text)"
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  // A real implementation would insert this specific suggestion
+                  // For now we just focus the editor
+                  editorRef.current?.focus();
+                }}
+              >
+                {m.text}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

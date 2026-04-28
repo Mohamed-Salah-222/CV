@@ -28,16 +28,16 @@ export function useCVService() {
     return cvApi.fetchCVRequest(id, token);
   }, [getToken]);
 
-  const createCV = useCallback(async (cvData: CVData, title?: string) => {
+  const createCV = useCallback(async (cvData: CVData, title?: string, ghostTextSuggestions?: any) => {
     const token = await getToken();
     if (!token) return null;
-    return cvApi.createCVRequest(cvData, token, title);
+    return cvApi.createCVRequest(cvData, token, title, ghostTextSuggestions);
   }, [getToken]);
 
-  const updateCV = useCallback(async (id: string, cvData: CVData, title?: string) => {
+  const updateCV = useCallback(async (id: string, cvData: CVData, title?: string, ghostTextSuggestions?: any) => {
     const token = await getToken();
     if (!token) return;
-    return cvApi.updateCVRequest(id, cvData, token, title);
+    return cvApi.updateCVRequest(id, cvData, token, title, ghostTextSuggestions);
   }, [getToken]);
 
   const deleteCV = useCallback(async (id: string) => {

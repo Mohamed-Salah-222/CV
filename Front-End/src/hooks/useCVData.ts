@@ -27,6 +27,7 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
   const autoSaveEnabled = options?.autoSave ?? true;
 
   const [cvData, setCVData] = useState<CVData>(defaultCVData as CVData);
+  const [ghostTextSuggestions, setGhostTextSuggestions] = useState<Record<string, any> | null>(null);
   const [currentCVId, setCurrentCVId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -41,13 +42,16 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
   const loadCV = useCallback(async (id: string) => {
     setIsLoading(true);
     try {
-      const data = await fetchCV(id);
-      if (data) {
-        setCVData(data);
+      const response = await fetchCV(id);
+      if (response) {
+        setCVData(response.data);
+        if (response.ghostTextSuggestions) {
+          setGhostTextSuggestions(response.ghostTextSuggestions);
+        }
         setCurrentCVId(id);
         currentCVIdRef.current = id;
         // Return the templateId if present
-        return data.templateId;
+        return response.templateId;
       }
     } catch (e) {
       console.error("Failed to load CV:", e);
@@ -57,14 +61,14 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
     return undefined;
   }, [fetchCV]);
 
-  const doSave = useCallback(async (data: CVData) => {
+  const doSave = useCallback(async (data: CVData, suggestions: any) => {
     setSaving(true);
     try {
       const id = currentCVIdRef.current;
       if (id) {
-        await updateCV(id, data);
+        await updateCV(id, data, undefined, suggestions);
       } else {
-        const newId = await createCV(data);
+        const newId = await createCV(data, undefined, suggestions);
         if (newId) {
           setCurrentCVId(newId);
           currentCVIdRef.current = newId;
@@ -80,16 +84,16 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
   }, [createCV, updateCV]);
 
   const handleSave = useCallback((dataOverride?: CVData) => {
-    doSave(dataOverride || cvData);
-  }, [doSave, cvData]);
+    doSave(dataOverride || cvData, ghostTextSuggestions);
+  }, [doSave, cvData, ghostTextSuggestions]);
 
-  const scheduleAutoSave = useCallback((data: CVData) => {
+  const scheduleAutoSave = useCallback((data: CVData, suggestions: any) => {
     if (!autoSaveEnabled) return;
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
-      doSave(data);
+      doSave(data, suggestions);
     }, autoSaveDelay);
   }, [autoSaveEnabled, autoSaveDelay, doSave]);
 
@@ -122,8 +126,8 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
       return;
     }
     
-    scheduleAutoSave(cvData);
-  }, [cvData, isLoading, scheduleAutoSave]);
+    scheduleAutoSave(cvData, ghostTextSuggestions);
+  }, [cvData, ghostTextSuggestions, isLoading, scheduleAutoSave]);
 
   // Cleanup
   useEffect(() => {
@@ -137,6 +141,8 @@ export function useCVData(options?: { autoSave?: boolean; autoSaveDelay?: number
   return {
     cvData,
     setCVData,
+    ghostTextSuggestions,
+    setGhostTextSuggestions,
     updateField,
     currentCVId,
     saving,

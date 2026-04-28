@@ -10,9 +10,10 @@ interface PersonalFormProps {
   onChange: (d: CVData["personal"]) => void;
   onImprove: (fieldType: string, text: string) => void;
   improveLoading: boolean;
+  ghostTextSuggestions?: any;
 }
 
-export function PersonalForm({ data, onChange, onImprove, improveLoading }: PersonalFormProps) {
+export function PersonalForm({ data, onChange, onImprove, improveLoading, ghostTextSuggestions }: PersonalFormProps) {
   const set = (k: keyof CVData["personal"]) => (v: string) => onChange({ ...data, [k]: v });
   
   return (
@@ -28,6 +29,7 @@ export function PersonalForm({ data, onChange, onImprove, improveLoading }: Pers
         placeholder="Brief professional summary..."
         onImprove={(text) => onImprove("personal.summary", text)}
         improveLoading={improveLoading}
+        ghostTextSuggestions={ghostTextSuggestions}
       />
     </div>
   );

@@ -11,9 +11,10 @@ interface ExperienceFormProps {
   onChange: (d: CVData["experience"]) => void;
   onImprove: (fieldType: string, text: string) => void;
   improveLoading: boolean;
+  ghostTextSuggestions?: any;
 }
 
-export function ExperienceForm({ data, onChange, onImprove, improveLoading }: ExperienceFormProps) {
+export function ExperienceForm({ data, onChange, onImprove, improveLoading, ghostTextSuggestions }: ExperienceFormProps) {
   const upd = (i: number, k: keyof CVData["experience"][number], v: string) =>
     onChange(data.map((e, idx) => (idx === i ? { ...e, [k]: v } : e)));
 
@@ -38,6 +39,7 @@ export function ExperienceForm({ data, onChange, onImprove, improveLoading }: Ex
             placeholder="Key responsibilities and achievements..."
             onImprove={(text) => onImprove(`experience.${i}`, text)}
             improveLoading={improveLoading}
+            ghostTextSuggestions={ghostTextSuggestions}
           />
         </RepeatCard>
       ))}
