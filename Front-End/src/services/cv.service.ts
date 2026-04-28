@@ -5,7 +5,8 @@ type CVData = templateTypes.CVData;
 
 export interface AICVResponse {
   cvData: CVData;
-  suggestions: Record<string, string[]>;
+  suggestions?: Record<string, string[]>;
+  cvId?: string;
 }
 
 function authHeaders(token: string): Record<string, string> {
@@ -121,6 +122,20 @@ export interface ImproveFieldResponse {
   improvements: { text: string; reasoning: string }[];
 }
 
+export async function parseCVRequest(token: string, rawText: string): Promise<AICVResponse | null> {
+  if (!token) return null;
+
+  const res = await fetch(`${env.API_URL}/api/ai/parse-cv`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ rawText }),
+  });
+  if (!res.ok) return null;
+
+  const json = await parseJSON(res);
+  if (json.status === "success" && json.data) return json.data;
+  return null;
+}
 export async function improveFieldRequest(
   token: string,
   fieldType: string,

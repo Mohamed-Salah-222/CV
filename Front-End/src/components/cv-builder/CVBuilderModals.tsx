@@ -7,12 +7,14 @@ import { fetchGitHubData } from "@/lib/github";
 interface AIGenerateModalProps {
   onClose: () => void;
   onGenerate: (text: string) => Promise<void>;
+  onParse: (text: string) => Promise<void>;
   isGenerating: boolean;
 }
 
-export function AIGenerateModal({ onClose, onGenerate, isGenerating }: AIGenerateModalProps) {
+export function AIGenerateModal({ onClose, onGenerate, onParse, isGenerating }: AIGenerateModalProps) {
   const [modalText, setModalText] = useState("");
   const [modalGithub, setModalGithub] = useState("");
+  const [improveWithAI, setImproveWithAI] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
@@ -24,15 +26,21 @@ export function AIGenerateModal({ onClose, onGenerate, isGenerating }: AIGenerat
 
     setError(null);
     try {
+      let dataToUse: string;
       if (modalGithub.trim()) {
-        const githubData = await fetchGitHubData(modalGithub.trim());
-        await onGenerate(githubData);
+        dataToUse = await fetchGitHubData(modalGithub.trim());
       } else {
-        await onGenerate(rawText);
+        dataToUse = rawText;
+      }
+
+      if (improveWithAI) {
+        await onGenerate(dataToUse);
+      } else {
+        await onParse(dataToUse);
       }
       onClose();
     } catch (e: any) {
-      setError(e.message || "Failed to generate CV");
+      setError(e.message || improveWithAI ? "Failed to generate CV" : "Failed to parse CV");
     }
   };
 
@@ -44,20 +52,52 @@ export function AIGenerateModal({ onClose, onGenerate, isGenerating }: AIGenerat
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
         <div style={{ padding: 20 }}>
-          <textarea 
-            className={styles.input} 
+          <textarea
+            className={styles.input}
             style={{ width: "100%", minHeight: 150, marginBottom: 16, resize: "vertical" }}
             placeholder="Paste your resume text or describe your career..."
             value={modalText}
             onChange={(e) => setModalText(e.target.value)}
           />
-          <input 
-            className={styles.input} 
+          <input
+            className={styles.input}
             style={{ width: "100%", marginBottom: 16 }}
             placeholder="Or GitHub username (e.g. torvalds)"
             value={modalGithub}
             onChange={(e) => setModalGithub(e.target.value)}
           />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, padding: "12px 16px", background: "#f9fafb", borderRadius: 8 }}>
+            <div>
+              <p style={{ margin: 0, fontWeight: 500, fontSize: 14 }}>Improve with AI</p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#6b7280" }}>{improveWithAI ? "AI will enhance your content" : "Only parse data, no changes"}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImproveWithAI(!improveWithAI)}
+              style={{
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                border: "none",
+                background: improveWithAI ? "var(--accent)" : "#d1d5db",
+                cursor: "pointer",
+                position: "relative",
+                transition: "background 0.2s"
+              }}
+            >
+              <span style={{
+                position: "absolute",
+                top: 2,
+                left: improveWithAI ? 22 : 2,
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "#fff",
+                transition: "left 0.2s",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+              }} />
+            </button>
+          </div>
           {error && <p style={{ color: "#ef4444", fontSize: 12, marginBottom: 16 }}>{error}</p>}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
             <button className={styles.navItem} style={{ width: "auto" }} onClick={onClose}>Cancel</button>
@@ -88,11 +128,11 @@ export function TemplateSelectorModal({ onClose, onSelect, selectedId }: Templat
         </div>
         <div style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
           {templates.map((t) => (
-            <div 
-              key={t.id} 
+            <div
+              key={t.id}
               onClick={() => { onSelect(t.id); onClose(); }}
-              style={{ 
-                cursor: "pointer", 
+              style={{
+                cursor: "pointer",
                 border: `2px solid ${selectedId === t.id ? "var(--accent)" : "transparent"}`,
                 borderRadius: 10,
                 padding: 8,

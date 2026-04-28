@@ -13,6 +13,49 @@ export class GeminiAIProvider extends AIProvider implements IAIProvider {
     this.apiKey = apiKey;
     this.model_token_limit = 1000;
   }
+  async parseCV(tokens: string): Promise<any> {
+    try {
+      const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + this.currModel + ":generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-goog-api-key": this.apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${this.parseCVPrompt}\n\nUSER_INPUT:\n${tokens}`
+                  }
+                ]
+              }
+            ],
+          }),
+        }
+      );
+
+      const data = await response.json() as any;
+      let text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+      if (!text) {
+        return { data: null, error: "No response from AI" };
+      }
+
+      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      try {
+        const parsed = JSON.parse(text);
+        return { data: parsed, score: 1 };
+      } catch {
+        return { data: null, error: "Failed to parse JSON" };
+      }
+    } catch (e: any) {
+      return { data: null, error: e.message };
+    }
+  }
 
   async suggest(tokens: string): Promise<any> {
     try {
@@ -95,7 +138,7 @@ export class GeminiAIProvider extends AIProvider implements IAIProvider {
 
   async improveField(fieldType: string, currentText: string, context?: string): Promise<any> {
     try {
-      const inputText = context 
+      const inputText = context
         ? `fieldType: ${fieldType}\ncurrentText: ${currentText}\ncontext: ${context}`
         : `fieldType: ${fieldType}\ncurrentText: ${currentText}`;
 

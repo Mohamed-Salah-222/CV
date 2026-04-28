@@ -35,14 +35,14 @@ const SECTION_LABELS: Record<string, string> = {
 export default function CVBuilderPage() {
   const [activeSection, setActiveSection] = useState<SectionId>("personal");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
-  const { 
-    cvData, setCVData, currentCVId, saving, lastSaved, isLoading, 
-    handleSave, loadCV 
+  const {
+    cvData, setCVData, currentCVId, saving, lastSaved, isLoading,
+    handleSave, loadCV
   } = useCVData();
-  
+
   const [exporting, setExporting] = useState(false);
   const cvRef = useRef<HTMLDivElement>(null);
-  const { createCV, generateCV, improveField } = useCVService();
+  const { createCV, generateCV, improveField, parseCV } = useCVService();
   const { exportToPDF } = useCVExport();
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -79,25 +79,47 @@ export default function CVBuilderPage() {
     }
   }, []);
 
+  const handleParseFromAI = useCallback(async (rawText: string) => {
+    const hasData = cvData.personal.fullName || cvData.experience.length > 0;
+    if (hasData && !confirm("This will replace your current CV data. Continue?")) return;
+
+    setIsGenerating(true);
+    try {
+      const result = await parseCV(rawText);
+      if (!result) throw new Error("Parsing failed");
+
+      setCVData(result.cvData);
+      if (result.cvId) {
+        window.history.replaceState(null, "", `?id=${result.cvId}`);
+      }
+      toast.success("CV Parsed successfully!");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to parse CV");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [parseCV, setCVData, cvData]);
+
   const handleGenerateFromAI = useCallback(async (rawText: string) => {
     const hasData = cvData.personal.fullName || cvData.experience.length > 0;
     if (hasData && !confirm("This will replace your current CV data. Continue?")) return;
-    
+
     setIsGenerating(true);
     try {
       const result = await generateCV(rawText);
       if (!result) throw new Error("Generation failed");
-      
+
       setCVData(result.cvData);
-      const newId = await createCV(result.cvData);
-      if (newId) window.history.replaceState(null, "", `?id=${newId}`);
+      if (result.cvId) {
+        window.history.replaceState(null, "", `?id=${result.cvId}`);
+      }
       toast.success("CV Generated successfully!");
     } catch (e: any) {
       toast.error(e.message || "Failed to generate CV");
     } finally {
       setIsGenerating(false);
     }
-  }, [generateCV, createCV, setCVData, cvData]);
+  }, [generateCV, setCVData, cvData]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -121,7 +143,7 @@ export default function CVBuilderPage() {
       const result = await improveField(fieldType, text);
       if (result?.improvements?.[0]?.text) {
         const improved = result.improvements[0].text;
-        
+
         setCVData(prev => {
           const next = { ...prev };
           if (fieldType === "personal.summary") {
@@ -217,13 +239,13 @@ export default function CVBuilderPage() {
       </main>
 
       <div className={styles.mobileSwitcher}>
-        <button 
+        <button
           className={`${styles.switcherBtn} ${mobileView === "edit" ? styles.switcherBtnActive : ""}`}
           onClick={() => setMobileView("edit")}
         >
           ✍️ Edit
         </button>
-        <button 
+        <button
           className={`${styles.switcherBtn} ${mobileView === "preview" ? styles.switcherBtnActive : ""}`}
           onClick={() => setMobileView("preview")}
         >
@@ -235,11 +257,12 @@ export default function CVBuilderPage() {
         <AIGenerateModal
           onClose={() => setShowAIGenerateModal(false)}
           onGenerate={handleGenerateFromAI}
+          onParse={handleParseFromAI}
           isGenerating={isGenerating}
         />
       )}
 
-      {showTemplateSelector && (
+{showTemplateSelector && (
         <TemplateSelectorModal
           onClose={() => setShowTemplateSelector(false)}
           onSelect={setTemplateId}

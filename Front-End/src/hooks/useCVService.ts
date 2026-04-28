@@ -64,6 +64,12 @@ export function useCVService() {
     return cvApi.improveFieldRequest(token, fieldType, currentText, context);
   }, [getToken]);
 
+  const parseCV = useCallback(async (rawText: string): Promise<AICVResponse | null> => {
+    const token = await getToken();
+    if (!token) return null;
+    return cvApi.parseCVRequest(token, rawText);
+  }, [getToken]);
+
   return {
     fetchCVs,
     fetchCV,
@@ -73,5 +79,6 @@ export function useCVService() {
     generateCV,
     duplicateCV,
     improveField,
+    parseCV,
   };
 }

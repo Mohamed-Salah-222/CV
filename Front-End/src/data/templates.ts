@@ -58,6 +58,7 @@ const templateFields: Record<string, templateTypes.TemplateField> = {
   },
 };
 export default templateFields;
+
 export const templates: templateTypes.Template[] = [
   {
     id: "modern",

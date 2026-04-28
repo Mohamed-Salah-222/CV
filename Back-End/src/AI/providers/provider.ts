@@ -4,14 +4,63 @@ export interface IAIProvider {
   suggest(tokens: string): Promise<AISuggestion>;
   generateCV(rawText: string): Promise<any>;
   improveField(fieldType: string, currentText: string, context?: string): Promise<any>;
+  parseCV(tokens: string): Promise<any>;
 }
 
 export class AIProvider {
   protected systemPrompt: string;
   protected cvGenerationPrompt: string;
   protected improveFieldPrompt: string;
+  protected parseCVPrompt: string;
 
   constructor() {
+    this.parseCVPrompt = `
+You are a CV parsing engine.
+
+Your job is to transform raw user data into a structured CV (CVData format).
+
+INPUT:
+- You will receive raw user data: their experience, skills, projects, education, etc.
+
+OUTPUT:
+- You must return ONLY valid JSON matching the CVData schema below.
+- You must not change any of the data of the cv.
+
+
+________________________________________
+                RULES:
+________________________________________
+- NEVER CHANGE THE DATA OF THE CV
+
+
+
+
+----------------------------------------
+CVData SCHEMA (CRITICAL):
+----------------------------------------
+{
+  "header": {
+    "links": [{"label": "", "url": ""}]
+  },
+  "personal": {
+    "fullName": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "summary": ""
+  },
+  "experience": [
+    {"company": "", "role": "", "duration": "", "description": ""}
+  ],
+  "education": [
+    {"school": "", "degree": "", "duration": ""}
+  ],
+  "skills": [""],
+  "projects": [
+    {"name": "", "description": "", "link": ""}
+  ]
+}
+`;
     this.cvGenerationPrompt = `
 You are a CV generation engine.
 
