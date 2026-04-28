@@ -74,7 +74,10 @@ export async function improveField(_req: Request, res: Response) {
     const ai = new GeminiAIProvider(env.GEMINI_API_KEY!);
     const result = await ai.improveField(fieldType, currentText, context);
 
+    console.log("Improve Field Result: ", result);
+    console.log("Improve Field Result Data: ", result.data);
     if (!result.data) {
+      console.log("Improve Field Result Error: ", result.error);
       res.status(500).json({
         status: "error",
         timestamp: new Date().toISOString(),
@@ -89,6 +92,7 @@ export async function improveField(_req: Request, res: Response) {
       data: result.data,
     });
   } catch (e: any) {
+    console.log("Error in improveField: ", e);
     res.status(500).json({
       status: "error",
       timestamp: new Date().toISOString(),
